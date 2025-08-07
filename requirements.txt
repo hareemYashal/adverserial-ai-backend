@@ -1,0 +1,23 @@
+# Core FastAPI dependencies (Python 3.13 compatible)
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9  # PostgreSQL adapter (updated version for better Windows compatibility)
+
+# Authentication & Security
+python-jose==3.3.0
+passlib==1.7.4
+python-dotenv==1.0.0
+
+# Data validation (Python 3.13 compatible)
+pydantic==2.11.7
+email-validator==2.1.0
+
+# OpenAI integration
+openai==1.68.2
+
+# HTTP client
+requests==2.31.0
