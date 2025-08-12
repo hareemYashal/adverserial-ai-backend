@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/adversarial_ai")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./adversarial_ai.db")
 
 # Database connection settings
 DB_HOST = os.getenv("DB_HOST", "localhost")

@@ -32,6 +32,21 @@ async def get_personas(
     personas = query.offset(skip).limit(limit).all()
     return personas
 
+@router.get("/active", response_model=List[PersonaResponse], summary="Get active personas")
+async def get_active_personas(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all active personas.
+    
+    - **skip**: Number of personas to skip (for pagination)
+    - **limit**: Maximum number of personas to return
+    """
+    personas = db.query(Persona).filter(Persona.is_active == True).offset(skip).limit(limit).all()
+    return personas
+
 @router.get("/{persona_id}", response_model=PersonaResponse, summary="Get persona by ID")
 async def get_persona(persona_id: int, db: Session = Depends(get_db)):
     """
@@ -64,6 +79,31 @@ async def get_personas_by_name(
     personas = db.query(Persona).filter(
         Persona.name.ilike(f"%{name}%")
     ).offset(skip).limit(limit).all()
+    return personas
+
+@router.get("/search/traits", response_model=List[PersonaResponse], summary="Search personas by personality traits")
+async def search_personas_by_traits(
+    trait_key: str,
+    trait_value: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Search personas by specific personality trait key-value pairs.
+    
+    - **trait_key**: The personality trait key to search for
+    - **trait_value**: The personality trait value to match
+    - **skip**: Number of personas to skip (for pagination)
+    - **limit**: Maximum number of personas to return
+    """
+    from sqlalchemy import text
+    
+    # Search for personas where the JSON field contains the specific key-value pair
+    personas = db.query(Persona).filter(
+        text(f"JSON_EXTRACT(personality_traits, '$.{trait_key}') = :trait_value")
+    ).params(trait_value=trait_value).offset(skip).limit(limit).all()
+    
     return personas
 
 @router.post("/", response_model=PersonaResponse, status_code=status.HTTP_201_CREATED, summary="Create new persona")
@@ -112,7 +152,7 @@ async def update_persona(
         )
     
     # Update fields if provided
-    update_data = persona_update.dict(exclude_unset=True)
+    update_data = persona_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_persona, field, value)
     
@@ -175,21 +215,6 @@ async def deactivate_persona(persona_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_persona)
     return db_persona
-
-@router.get("/active", response_model=List[PersonaResponse], summary="Get active personas")
-async def get_active_personas(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db)
-):
-    """
-    Retrieve all active personas.
-    
-    - **skip**: Number of personas to skip (for pagination)
-    - **limit**: Maximum number of personas to return
-    """
-    personas = db.query(Persona).filter(Persona.is_active == True).offset(skip).limit(limit).all()
-    return personas
 
 @router.get("/stats/status", summary="Get persona statistics by status")
 async def get_persona_stats_by_status(db: Session = Depends(get_db)):

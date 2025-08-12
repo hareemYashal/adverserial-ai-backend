@@ -123,13 +123,49 @@ async def update_document(
         )
     
     # Update fields if provided
-    update_data = document_update.dict(exclude_unset=True)
+    update_data = document_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_document, field, value)
     
     db.commit()
     db.refresh(db_document)
     return db_document
+
+@router.get("/search/{filename}", response_model=List[DocumentResponse], summary="Search documents by filename")
+async def search_documents_by_filename(
+    filename: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Search documents by filename (case-insensitive partial match).
+    
+    - **filename**: Filename to search for
+    - **skip**: Number of documents to skip (for pagination)
+    - **limit**: Maximum number of documents to return
+    """
+    documents = db.query(Document).filter(
+        Document.filename.ilike(f"%{filename}%")
+    ).offset(skip).limit(limit).all()
+    return documents
+
+@router.get("/by-type/{file_type:path}", response_model=List[DocumentResponse], summary="Get documents by file type")
+async def get_documents_by_type(
+    file_type: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve documents by file type.
+    
+    - **file_type**: The file type to filter by (e.g., 'application/pdf', 'text/plain')
+    - **skip**: Number of documents to skip (for pagination)
+    - **limit**: Maximum number of documents to return
+    """
+    documents = db.query(Document).filter(Document.file_type == file_type).offset(skip).limit(limit).all()
+    return documents
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete document")
 async def delete_document(document_id: int, db: Session = Depends(get_db)):

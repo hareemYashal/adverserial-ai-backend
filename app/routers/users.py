@@ -4,6 +4,7 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserResponse, UserCreate, UserUpdate, UserWithProjects
+from app.services.auth_service import auth_service
 
 router = APIRouter(
     prefix="/users",
@@ -91,10 +92,13 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Create a new user.
     
+    ⚠️ **DEPRECATED**: Use `/auth/register` instead for proper authentication.
+    This endpoint is kept for backward compatibility and testing purposes.
+    
     - **user**: User data to create
     """
     # Check if username already exists
-    existing_user = db.query(User).filter(User.username == user.username).first()
+    existing_user = auth_service.get_user_by_username(db, user.username)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -102,18 +106,19 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         )
     
     # Check if email already exists
-    existing_email = db.query(User).filter(User.email == user.email).first()
+    existing_email = auth_service.get_user_by_email(db, user.email)
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
     
-    # Create new user (password hashing should be implemented in a service layer)
+    # Create new user with proper password hashing
+    hashed_password = auth_service.get_password_hash(user.password)
     db_user = User(
         username=user.username,
         email=user.email,
-        hashed_password=user.password  # TODO: Hash password before storing
+        hashed_password=hashed_password
     )
     db.add(db_user)
     db.commit()
@@ -140,10 +145,12 @@ async def update_user(
         )
     
     # Update fields if provided
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if field == "password":
-            setattr(db_user, "hashed_password", value)  # TODO: Hash password
+            # Hash password before storing
+            hashed_password = auth_service.get_password_hash(value)
+            setattr(db_user, "hashed_password", hashed_password)
         else:
             setattr(db_user, field, value)
     

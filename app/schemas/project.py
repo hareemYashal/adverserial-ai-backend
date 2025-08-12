@@ -23,12 +23,10 @@ class ProjectResponse(ProjectBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 # Schema for project with documents
 class ProjectWithDocuments(ProjectResponse):
-    documents: List["DocumentResponse"] = []
+    documents: List = []
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

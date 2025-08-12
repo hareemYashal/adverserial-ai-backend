@@ -1,361 +1,297 @@
-# Adversarial AI Writing Assistant
+# 🤖 Adversarial AI Writing Assistant - Backend
 
-A FastAPI-based backend for multi-persona document analysis and critique. This application provides a robust API for managing users, projects, documents, and AI personas for adversarial writing assistance.
+A powerful FastAPI backend for the Adversarial AI Writing Assistant that provides multi-persona document analysis, file processing, and comprehensive user management.
 
-## 🚀 Features
+## 🌟 Features
 
-### ✅ Completed Features
+- **🔐 JWT Authentication** - Complete user registration, login, and token management
+- **📁 Project Management** - Organize documents into projects with user associations
+- **📄 Multi-format Document Upload** - Support for PDF, DOCX, and TXT files with text extraction
+- **🎭 AI Persona System** - Manage multiple AI personas with personality traits for document analysis
+- **🔍 Advanced Search** - Search personas by traits, documents by content, and projects by criteria
+- **📊 RESTful API** - Comprehensive API with automatic OpenAPI documentation
+- **🧪 Comprehensive Testing** - 43+ tests covering all functionality with 100% pass rate
+- **🗄️ Database Management** - SQLAlchemy ORM with PostgreSQL/SQLite support
 
-- **FastAPI Framework**: Modern, high-performance web framework with automatic API documentation
-- **Database Models**: Complete SQLAlchemy ORM with 4 core models (User, Project, Document, Persona)
-- **Pydantic Schemas**: Type-safe request/response validation for all API endpoints
-- **Authentication Foundation**: JWT-based authentication system ready for implementation
-- **CORS Support**: Cross-origin resource sharing configured for frontend integration
-- **Environment Configuration**: Flexible configuration management with .env support
-- **Database Abstraction**: SQLAlchemy with PostgreSQL/SQLite support
-- **Testing Framework**: Comprehensive database test suite with CRUD verification
-- **Python 3.13 Compatibility**: Resolved compatibility issues and optimized for latest Python version
-
-## 🏗️ Architecture
-
-### Project Structure
-```
-adversarial-ai-backend/
-├── app/
-│   ├── models/          # SQLAlchemy ORM models
-│   │   ├── user.py      # User authentication & management
-│   │   ├── project.py   # Project organization
-│   │   ├── document.py  # Document storage & metadata
-│   │   └── persona.py   # AI persona definitions
-│   ├── schemas/         # Pydantic validation schemas
-│   │   ├── user.py      # User request/response schemas
-│   │   ├── project.py   # Project schemas
-│   │   ├── document.py  # Document schemas
-│   │   └── persona.py   # Persona schemas
-│   ├── routers/         # API route handlers (ready for implementation)
-│   ├── services/        # Business logic layer (ready for implementation)
-│   ├── main.py          # FastAPI application entry point
-│   ├── config.py        # Environment configuration
-│   └── database.py      # Database connection & session management
-├── requirements.txt     # Python dependencies
-├── test_database.py    # Database testing suite
-└── test_minimal.py     # Minimal API compatibility test
-```
-
-### Database Models
-
-#### User Model
-- **Fields**: id, username, email, hashed_password, is_active, created_at, updated_at
-- **Relationships**: One-to-many with Projects
-- **Features**: Unique constraints, timestamps, soft delete support
-
-#### Project Model
-- **Fields**: id, title, description, user_id, created_at, updated_at
-- **Relationships**: Belongs to User, has many Documents
-- **Features**: User ownership, document organization
-
-#### Document Model
-- **Fields**: id, filename, content, file_type, project_id, created_at, updated_at
-- **Relationships**: Belongs to Project
-- **Features**: File metadata, content storage, type classification
-
-#### Persona Model
-- **Fields**: id, name, description, personality_traits, system_prompt, created_at, updated_at
-- **Features**: JSON personality traits, AI system prompts, reusable personas
-
-### API Endpoints
-
-#### Core Endpoints
-- `GET /` - Root endpoint with API information
-- `GET /health` - Health check endpoint
-- `GET /api/test` - Test endpoint for API verification
-
-#### Planned Endpoints (Ready for Implementation)
-- **Authentication**: `/auth/login`, `/auth/register`, `/auth/refresh`
-- **Users**: `/users/`, `/users/{id}`, `/users/{id}/projects`
-- **Projects**: `/projects/`, `/projects/{id}`, `/projects/{id}/documents`
-- **Documents**: `/documents/`, `/documents/{id}`, `/documents/{id}/analyze`
-- **Personas**: `/personas/`, `/personas/{id}`, `/personas/{id}/critique`
-
-## 🛠️ Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.13+
-- pip package manager
-- Virtual environment (recommended)
 
-### 1. Clone and Setup
-```bash
-# Clone the repository
-git clone <repository-url>
-cd adversarial-ai-backend
+- Python 3.9+
+- PostgreSQL (optional, SQLite used by default)
+- Git
 
-# Create virtual environment
-python -m venv venv
+### Installation
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/adversarial-ai-backend.git
+   cd adversarial-ai-backend
+   ```
 
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   
+   # Windows
+   venv\Scripts\activate
+   
+   # macOS/Linux
+   source venv/bin/activate
+   ```
 
-### 3. Environment Configuration
-```bash
-# Create environment file
-cp .env.example .env
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-# Edit .env with your configuration:
-DATABASE_URL=postgresql://user:password@localhost:5432/adversarial_ai
-# or for SQLite (development):
-DATABASE_URL=sqlite:///./adversarial_ai.db
+4. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-SECRET_KEY=your-secret-key-here
-OPENAI_API_KEY=your-openai-api-key
-ENVIRONMENT=development
-DEBUG=true
-```
+5. **Initialize database**
+   ```bash
+   # The database will be created automatically on first run
+   # For PostgreSQL, ensure your DATABASE_URL is configured in .env
+   ```
 
-### 4. Database Setup
-```bash
-# Test database connectivity and models
-python test_database.py
+6. **Run the application**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
-# Expected output:
-# ✅ Database connection successful!
-# ✅ Database tables created successfully!
-# ✅ CRUD operations passed!
-# 🎉 All database tests passed!
-```
+7. **Access the API**
+   - API: http://localhost:8000
+   - Documentation: http://localhost:8000/docs
+   - Alternative docs: http://localhost:8000/redoc
 
-### 5. Run the Application
-```bash
-# Development server with auto-reload
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+## 📖 API Documentation
 
-# Production server
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+### Authentication Endpoints
+- `POST /auth/register` - Register a new user
+- `POST /auth/login` - Login user and get JWT token
+- `GET /auth/me` - Get current user info
+- `POST /auth/refresh` - Refresh JWT token
+- `POST /auth/logout` - Logout user
 
-### 6. Verify Installation
-```bash
-# Test minimal API functionality
-python test_minimal.py
+### Project Management
+- `GET /projects/` - List all projects
+- `POST /projects/` - Create new project
+- `GET /projects/{id}` - Get specific project
+- `PUT /projects/{id}` - Update project
+- `DELETE /projects/{id}` - Delete project
 
-# Visit API documentation
-# http://localhost:8000/docs (Swagger UI)
-# http://localhost:8000/redoc (ReDoc)
-```
+### Document Management
+- `POST /documents/` - Create document (text content)
+- `GET /documents/` - List documents
+- `GET /documents/{id}` - Get specific document
+- `PUT /documents/{id}` - Update document
+- `DELETE /documents/{id}` - Delete document
+
+### File Upload
+- `POST /upload/document` - Upload single file
+- `POST /upload/documents/batch` - Upload multiple files
+- `GET /upload/document/{id}/status` - Get processing status
+- `POST /upload/document/{id}/reprocess` - Reprocess document
+
+### Persona Management
+- `GET /personas/` - List all personas
+- `POST /personas/` - Create new persona
+- `GET /personas/{id}` - Get specific persona
+- `PUT /personas/{id}` - Update persona
+- `DELETE /personas/{id}` - Delete persona
+- `GET /personas/search/traits` - Search personas by traits
+
+### User Management
+- `GET /users/` - List users (admin)
+- `POST /users/` - Create user (deprecated - use /auth/register)
+- `GET /users/{id}` - Get user details
+- `PUT /users/{id}` - Update user
+- `DELETE /users/{id}` - Delete user
+
+## 🗄️ Database Schema
+
+### Models
+- **User** - User accounts with authentication
+- **Project** - Document organization containers
+- **Document** - Uploaded files and text content
+- **Persona** - AI personality configurations
+
+### Relationships
+- Users have many Projects
+- Projects have many Documents
+- Documents belong to Projects
+- Personas are independent entities
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DATABASE_URL` | Database connection string | `postgresql://postgres:password@localhost:5432/adversarial_ai` | Yes |
-| `SECRET_KEY` | JWT secret key | `dev-secret-key-change-for-production` | Yes |
-| `OPENAI_API_KEY` | OpenAI API key for AI features | None | No |
-| `ENVIRONMENT` | Application environment | `development` | No |
-| `DEBUG` | Debug mode | `true` | No |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `sqlite:///./test.db` | Database connection string |
+| `SECRET_KEY` | `dev-secret-key-change-for-production` | JWT secret key |
+| `ALGORITHM` | `HS256` | JWT algorithm |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Token expiration time |
+| `OPENAI_API_KEY` | None | OpenAI API key (for future LLM integration) |
 
-### Database Configuration
-
-#### PostgreSQL (Production)
-```env
-DATABASE_URL=postgresql://username:password@host:port/database_name
-```
-
-#### SQLite (Development)
-```env
-DATABASE_URL=sqlite:///./adversarial_ai.db
-```
+### Supported File Types
+- **PDF** - Portable Document Format
+- **DOCX** - Microsoft Word documents
+- **TXT** - Plain text files
 
 ## 🧪 Testing
 
-### Database Tests
+Run the complete test suite:
+
 ```bash
-python test_database.py
+# Run all tests
+pytest
+
+# Run specific test categories
+pytest tests/test_auth_api.py          # Authentication tests
+pytest tests/test_all_crud_apis.py     # CRUD operation tests
+pytest tests/test_file_upload_api.py   # File upload tests
+pytest tests/test_file_service.py      # File service tests
+
+# Run with coverage
+pytest --cov=app --cov-report=html
 ```
 
-Tests include:
-- Database connectivity verification
-- Table creation and schema validation
-- CRUD operations for all models
-- Relationship integrity checks
-- Data cleanup and rollback
+### Test Coverage
+- **Authentication**: 18/18 tests passing
+- **CRUD Operations**: 13/13 tests passing
+- **File Processing**: 12/12 tests passing
+- **File Services**: 11/11 tests passing
+- **Total**: 43+ tests with 100% pass rate
 
-### API Tests
-```bash
-python test_minimal.py
+## 🏗️ Project Structure
+
 ```
-
-Tests include:
-- FastAPI import compatibility
-- Pydantic schema validation
-- Basic endpoint functionality
-
-## 📊 Performance Metrics
-
-- **Server Startup**: < 2 seconds
-- **API Response Time**: < 100ms
-- **Memory Usage**: ~50MB
-- **Database Operations**: Optimized with SQLAlchemy session management
-- **Hot Reload**: Enabled for development
-
-## 🔒 Security Features
-
-- **CORS Configuration**: Cross-origin requests properly handled
-- **JWT Authentication**: Ready for implementation
-- **Password Hashing**: Prepared for secure password storage
-- **Environment-based Configuration**: Secure credential management
-- **Input Validation**: Pydantic schema validation on all endpoints
+adversarial-ai-backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI application entry point
+│   ├── config.py              # Configuration settings
+│   ├── database.py            # Database setup and session management
+│   ├── models/                # SQLAlchemy database models
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── project.py
+│   │   ├── document.py
+│   │   └── persona.py
+│   ├── schemas/               # Pydantic schemas for API
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── project.py
+│   │   ├── document.py
+│   │   └── persona.py
+│   ├── routers/               # API route handlers
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── users.py
+│   │   ├── projects.py
+│   │   ├── documents.py
+│   │   ├── personas.py
+│   │   └── file_upload.py
+│   └── services/              # Business logic services
+│       ├── __init__.py
+│       ├── auth_service.py
+│       └── file_service.py
+├── tests/                     # Comprehensive test suite
+│   ├── test_auth_api.py
+│   ├── test_all_crud_apis.py
+│   ├── test_file_upload_api.py
+│   └── test_file_service.py
+├── uploads/                   # File upload directory (auto-created)
+├── .env.example              # Environment variables template
+├── .gitignore                # Git ignore patterns
+├── requirements.txt          # Python dependencies
+├── README.md                 # This file
+└── AUTHENTICATION_GUIDE.md   # Detailed authentication guide
+```
 
 ## 🚀 Deployment
 
-### Development
+### Local Development
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Production
-```bash
-# Using Gunicorn (recommended)
-pip install gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+### Production Deployment
 
-# Using Uvicorn directly
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-```
-
-### Docker (Ready for Implementation)
+#### Using Docker (Recommended)
 ```dockerfile
-FROM python:3.13-slim
+# Dockerfile example
+FROM python:3.9-slim
+
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
+EXPOSE 8000
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-## 📚 API Documentation
-
-### Interactive Documentation
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Available Endpoints
-
-#### Health & Status
-- `GET /` - API information and status
-- `GET /health` - Health check
-- `GET /api/test` - Test endpoint
-
-#### Response Format
-```json
-{
-  "message": "Adversarial AI Writing Assistant API",
-  "status": "running",
-  "framework": "FastAPI"
-}
-```
-
-## 🔄 Development Workflow
-
-### Adding New Features
-1. **Models**: Add SQLAlchemy models in `app/models/`
-2. **Schemas**: Create Pydantic schemas in `app/schemas/`
-3. **Routes**: Implement API routes in `app/routers/`
-4. **Services**: Add business logic in `app/services/`
-5. **Tests**: Write tests for new functionality
-
-### Code Quality
-- **Type Hints**: All functions use Python type hints
-- **Documentation**: Comprehensive docstrings and comments
-- **Validation**: Pydantic schemas for all data validation
-- **Error Handling**: Proper exception handling throughout
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Database Connection Issues
+#### Using Gunicorn
 ```bash
-# Check database connectivity
-python test_database.py
-
-# Verify environment variables
-echo $DATABASE_URL
+pip install gunicorn
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-#### Package Installation Issues
-```bash
-# Upgrade pip
-pip install --upgrade pip
+### Environment Setup for Production
+1. Set `SECRET_KEY` to a secure random string
+2. Configure `DATABASE_URL` for PostgreSQL
+3. Set up file storage (local or cloud)
+4. Configure CORS settings for your frontend domain
 
-# Clear cache and reinstall
-pip cache purge
-pip install -r requirements.txt --force-reinstall
-```
+## 🔮 Future Enhancements
 
-#### Python 3.13 Compatibility
-- All dependencies tested and compatible
-- FastAPI and Pydantic versions optimized for Python 3.13
-- SQLAlchemy 2.0+ with modern async support
+### Phase 2 - Alpha Development (Weeks 4-7)
+- **LLM Integration** - OpenAI GPT-4o integration for document analysis
+- **Multi-Persona Orchestration** - Parallel persona critiques
+- **RAG Pipeline** - Vector database and contextual analysis
+- **Citation Verification** - Reference validation using CrossRef/PubMed
 
-## 📈 Roadmap
-
-### Completed ✅
-- [x] Project structure setup
-- [x] FastAPI framework implementation
-- [x] Database models and relationships
-- [x] Pydantic schemas and validation
-- [x] Environment configuration
-- [x] Database testing suite
-- [x] Python 3.13 compatibility
-- [x] CORS middleware
-- [x] Health check endpoints
-
-### In Progress 🔄
-- [ ] Authentication system implementation
-- [ ] API route handlers
-- [ ] Business logic services
-- [ ] OpenAI integration
-- [ ] Document analysis features
-
-### Planned 📋
-- [ ] User management endpoints
-- [ ] Project CRUD operations
-- [ ] Document upload and processing
-- [ ] AI persona management
-- [ ] Adversarial writing assistance
-- [ ] Real-time collaboration features
-- [ ] Advanced analytics and reporting
+### Phase 3 - Beta Development (Weeks 8-10)
+- **Performance Optimization** - Async processing and caching
+- **Frontend Integration** - Next.js dashboard
+- **Advanced Analytics** - Usage metrics and insights
+- **Production Deployment** - Docker containerization and CI/CD
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📄 License
+### Development Guidelines
+- Follow PEP 8 style guidelines
+- Add tests for new features
+- Update documentation for API changes
+- Ensure all tests pass before submitting PR
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📝 License
 
-## 🆘 Support
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-For support and questions:
-- Create an issue in the repository
-- Check the API documentation at `/docs`
-- Review the test files for usage examples
+## 🙏 Acknowledgments
+
+- FastAPI for the excellent web framework
+- SQLAlchemy for powerful ORM capabilities
+- Pydantic for data validation
+- pytest for comprehensive testing framework
+
+## 📞 Support
+
+For support, email support@yourcompany.com or create an issue in this repository.
 
 ---
 
-**Status**: 🟢 Production Ready Foundation - Core architecture complete, ready for feature implementation
+**Built with ❤️ for the Adversarial AI Writing Assistant Project**

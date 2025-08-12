@@ -29,15 +29,13 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 # Schema for user with projects
 class UserWithProjects(UserResponse):
-    projects: List["ProjectResponse"] = []
+    projects: List = []
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 # For token response
 class Token(BaseModel):
