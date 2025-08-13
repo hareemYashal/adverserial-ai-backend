@@ -571,3 +571,11 @@ curl -X POST "http://localhost:8000/personas/" \
 ```bash
 curl "http://localhost:8000/projects/1/with-documents"
 ``` 
+
+6. **Analysis of the document with respect to Persona**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/analyze/?project_id=ID&document_id=ID&persona_name=PERSONA_NAME" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>' \
+  -d ''
+```

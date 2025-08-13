@@ -280,6 +280,14 @@ curl -X POST "http://localhost:8000/personas/" \
 curl -H "Authorization: Bearer $TOKEN" \
      "http://localhost:8000/upload/document/$DOCUMENT_ID/status"
 ```
+```bash
+curl -X POST "http://127.0.0.1:8000/api/analyze/?project_id=ID&document_id=ID&persona_name=PERSONA_NAME" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>' \
+  -d ''
+  
+```
+
 
 ## 🚀 Future Analysis Endpoint (Coming Soon)
 
