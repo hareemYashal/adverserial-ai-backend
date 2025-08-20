@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.models import User, Project, Document, Persona
-from app.routers import auth_router, users_router, projects_router, documents_router, personas_router, analyze_router
+from app.routers import auth_router, users_router, projects_router, documents_router, personas_router, analyze_router,multi_analyze_router
 from app.routers.file_upload import router as file_upload_router
 
 # Create database tables
@@ -39,6 +39,7 @@ app.include_router(documents_router)
 app.include_router(personas_router)
 app.include_router(file_upload_router)
 app.include_router(analyze_router)
+app.include_router(multi_analyze_router)
 
 @app.get("/")
 async def root():
