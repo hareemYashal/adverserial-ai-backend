@@ -2,10 +2,11 @@
 from openai import AsyncOpenAI  # Note: Async client
 from openai import OpenAI
 from app.services.multi_persona_services import multi_persona_services
-
+import os 
 class Multi_AnalysisService:
     def __init__(self):
-        self.client = OpenAI(api_key='OPEN_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key)
     async def analyze(self, document_text: str, persona_name: str) -> dict:
         persona = multi_persona_services.get_by_name(persona_name)
         if not persona:

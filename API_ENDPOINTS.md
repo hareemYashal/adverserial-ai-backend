@@ -579,3 +579,12 @@ curl -X POST "http://127.0.0.1:8000/api/analyze/?project_id=ID&document_id=ID&pe
   -H 'Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>' \
   -d ''
 ```
+
+
+7. **Analysis of the document with respect to Multi-Persona**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/multi_analyze/?project_id=ID&document_id=ID&persona_name={PERSONA_NAME,PERSONA_NAME}" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>' \
+  -d ''
+```

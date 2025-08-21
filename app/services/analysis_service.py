@@ -1,10 +1,11 @@
 from openai import OpenAI
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
-
+import os
 class AnalysisService:
     def __init__(self):
-        self.client = OpenAI(api_key='OPEN_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key)
         # If you want to hardcode, you can still do:
         # self.client = OpenAI(api_key='sk-proj-...')
 

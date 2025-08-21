@@ -190,7 +190,8 @@ adversarial-ai-backend/
 │   │   └── persona.py
 │   ├── routers/               # API route handlers
 │   │   ├── __init__.py
-|       ├── analysis.py
+|   │   ├── analysis.py
+|   │   ├── mutli_analysis.py
 │   │   ├── auth.py
 │   │   ├── users.py
 │   │   ├── projects.py
@@ -201,7 +202,9 @@ adversarial-ai-backend/
 │       ├── __init__.py
 │       ├── auth_service.py
 │       ├── analysis_service.py
+│       ├── multi_analysis_service.py
 │       ├── persona_service.py
+│       ├── multi_persona_service.py
 │       └── file_service.py
 ├── tests/                     # Comprehensive test suite
 │   ├── test_auth_api.py
