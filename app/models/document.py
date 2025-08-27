@@ -14,7 +14,7 @@ class Document(Base):
     file_type = Column(String)  # MIME type
     file_size = Column(Integer)  # Size in bytes
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    
+    session_id =Column(String)
     # Processing status
     is_processed = Column(Boolean, default=False)  # Whether text extraction is complete
     processing_error = Column(Text)  # Store any processing errors

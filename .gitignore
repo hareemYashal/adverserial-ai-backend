@@ -137,7 +137,9 @@ venv.bak/
 
 # mkdocs documentation
 /site
-
+/chroma
+/data
+/vector_store
 # mypy
 .mypy_cache/
 .dmypy.json

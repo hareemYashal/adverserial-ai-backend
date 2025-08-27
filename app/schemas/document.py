@@ -25,6 +25,7 @@ class DocumentUploadResponse(BaseModel):
     processing_error: Optional[str] = None
     uploaded_at: datetime
     processed_at: Optional[datetime] = None
+    session_id: str
     
     model_config = {"from_attributes": True}
 
