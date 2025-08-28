@@ -1,5 +1,5 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Use Python 3.13 slim image
+FROM python:3.13-slim
 
 # Set working directory
 WORKDIR /app
@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies (added git here)
+# Install system dependencies (added git + curl here)
 RUN apt-get update && apt-get install -y \
     gcc \
     git \
