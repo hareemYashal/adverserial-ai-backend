@@ -28,6 +28,7 @@ async def multi_analyze_document(
     try:
         tasks = [
             multi_analysis_service.analyze(document.content, persona_name)
+
             for persona_name in persona_names
         ]
         feedbacks = await asyncio.gather(*tasks, return_exceptions=True)
@@ -41,11 +42,37 @@ async def multi_analyze_document(
                 })
             else:
                 results.append(result)
+        verified_citations = []
+
+        dois = multi_analysis_service.extract_dois(document.content)
+        refs = multi_analysis_service.extract_references(document.content)
+        # 1. Verify DOIs against CrossRef
+        for doi in dois:
+            result = multi_analysis_service.verify_doi_crossref(doi)
+            if result:
+                verified_citations.append(result)
+
+        # 2. For non-DOI refs, try CrossRef title search
+        for ref in refs:
+            if any(doi in ref for doi in dois):
+                continue  # already handled
+            result = multi_analysis_service.search_crossref_by_title(ref)
+            if result:
+                verified_citations.append(result)
+            else:
+                # Keep raw if not found
+                verified_citations.append({
+                    "title": ref,
+                    "source": "Unverified",
+                    "valid": False
+                })
+
 
         return {
             "document_id": document_id,
             "project_id": project_id,
-            "results": results
+            "results": results,
+            "citations": verified_citations
         }
 
     except Exception as e:
