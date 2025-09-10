@@ -8,6 +8,7 @@ from .analysis import router as analyze_router
 from .multi_analysis import router as multi_analyze_router
 from .ingestion import router as ingest_router
 from .session import router as session_router
+from .chat import router as chat_router
 __all__ = [
     "auth_router",
     "users_router",
@@ -17,5 +18,6 @@ __all__ = [
     "analyze_router",
     "multi_analyze_router",
     "ingest_router",
-    "session_router"
+    "session_router",
+    "chat_router"
 ]
