@@ -1,6 +1,7 @@
 import os
 import re
 import requests
+from fuzzywuzzy import fuzz
 from openai import OpenAI
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
@@ -56,14 +57,33 @@ class AnalysisService:
                             seen_titles.add(result["title"].lower())
                 continue  # If DOI found, skip title search for this ref
 
-            # No DOI, try strict CrossRef title search
+            # No DOI, try CrossRef title search with fuzzy matching
             result = self._search_crossref_by_title(ref)
-            # Only accept if returned title is a close match to the reference (case-insensitive substring)
-            if result and result.get("title") and result["title"].lower() in ref.lower():
-                if result["title"].lower() not in seen_titles:
+            match_found = False
+            if result and result.get("title"):
+                # --- Robust fuzzy matching ---
+                import string
+                def normalize(text):
+                    return ''.join([c for c in text.lower() if c not in string.punctuation]).strip()
+                ref_norm = normalize(ref)
+                title_norm = normalize(result["title"])
+                ratio = fuzz.ratio(title_norm, ref_norm)
+                partial = fuzz.partial_ratio(title_norm, ref_norm)
+                token_sort = fuzz.token_sort_ratio(title_norm, ref_norm)
+                token_set = fuzz.token_set_ratio(title_norm, ref_norm)
+                # Accept if any metric is high enough
+                if (
+                    ratio > 80 or
+                    partial > 85 or
+                    token_sort > 85 or
+                    token_set > 90 or
+                    (title_norm in ref_norm and len(title_norm) > 10) or
+                    (ref_norm in title_norm and len(ref_norm) > 10)
+                ) and title_norm not in seen_titles:
                     verified_citations.append(result)
-                    seen_titles.add(result["title"].lower())
-            else:
+                    seen_titles.add(title_norm)
+                    match_found = True
+            if not match_found:
                 # Keep raw if not found or not a close match
                 verified_citations.append({
                     "title": ref,
@@ -153,29 +173,63 @@ class AnalysisService:
             pass
         return None
 
-    def _search_crossref_by_title(self, title: str):
-        """Fallback: search CrossRef by title when DOI missing."""
+    def _search_crossref_by_title(self, ref_title: str):
+        """Improved: search CrossRef by title with fuzzy + author matching."""
+        import re
         url = "https://api.crossref.org/works"
+
+        def normalize(text):
+            return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', text.lower())).strip()
+
         try:
-            response = requests.get(url, params={"query.title": title, "rows": 1}, timeout=5)
-            if response.status_code == 200:
-                items = response.json().get("message", {}).get("items", [])
-                if items:
-                    item = items[0]
-                    return {
-                        "doi": item.get("DOI", ""),
-                        "title": item.get("title", [""])[0],
-                        "authors": [
-                            f"{a.get('family', '')}, {a.get('given', '')}"
-                            for a in item.get("author", [])
-                        ] if "author" in item else [],
-                        "published": item.get("issued", {}).get("date-parts", [[]])[0],
-                        "source": "CrossRef",
-                        "valid": True
-                    }
+            response = requests.get(url, params={"query.title": ref_title, "rows": 5}, timeout=5)
+            if response.status_code != 200:
+                return None
+
+            items = response.json().get("message", {}).get("items", [])
+            if not items:
+                return None
+
+            ref_norm = normalize(ref_title)
+            best_item, best_score = None, 0
+
+            for item in items:
+                title = item.get("title", [""])[0]
+                title_norm = normalize(title)
+
+                score = max(
+                    fuzz.ratio(ref_norm, title_norm),
+                    fuzz.partial_ratio(ref_norm, title_norm),
+                    fuzz.token_set_ratio(ref_norm, title_norm)
+                )
+
+                # Small boost if any author's surname appears in ref
+                if "author" in item:
+                    authors = [a.get("family", "").lower() for a in item.get("author", [])]
+                    if any(a and a in ref_norm for a in authors):
+                        score += 5
+
+                if score > best_score:
+                    best_score, best_item = score, item
+
+            # Only accept if similarity high enough
+            if best_item and best_score >= 70:
+                return {
+                    "doi": best_item.get("DOI", ""),
+                    "title": best_item.get("title", [""])[0],
+                    "authors": [
+                        f"{a.get('family', '')}, {a.get('given', '')}"
+                        for a in best_item.get("author", [])
+                    ] if "author" in best_item else [],
+                    "published": best_item.get("issued", {}).get("date-parts", [[]])[0],
+                    "source": "CrossRef",
+                    "valid": True
+                }
+
         except Exception:
             pass
-        return None
+
+        return None  # fallback → Unverified
 
 
 # Singleton
