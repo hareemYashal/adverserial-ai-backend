@@ -54,6 +54,10 @@ def extract_references(
 
     try:
         out = analysis_service.extract_citations_llm(raw_text)
+        # Run verification on extracted citations
+        if out and "citations" in out:
+            verified = analysis_service.verify_citations_improved(raw_text, out["citations"])
+            out["citations"] = verified
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(exc)}")
     return out
