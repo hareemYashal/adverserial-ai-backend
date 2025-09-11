@@ -3,6 +3,7 @@ from .user import UserCreate, UserResponse, UserLogin, UserUpdate, UserWithProje
 from .project import ProjectCreate, ProjectResponse, ProjectUpdate, ProjectWithDocuments
 from .document import DocumentCreate, DocumentResponse, DocumentUpdate
 from .persona import PersonaCreate, PersonaResponse, PersonaUpdate
+from .citation import Citation, CitationsResponse
 
 __all__ = [
     # User schemas
@@ -12,5 +13,7 @@ __all__ = [
     # Document schemas
     "DocumentCreate", "DocumentResponse", "DocumentUpdate",
     # Persona schemas
-    "PersonaCreate", "PersonaResponse", "PersonaUpdate"
+    "PersonaCreate", "PersonaResponse", "PersonaUpdate",
+    # Citation schemas
+    "Citation", "CitationsResponse"
 ]
