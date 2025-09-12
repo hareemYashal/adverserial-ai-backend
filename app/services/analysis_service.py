@@ -35,13 +35,12 @@ class AnalysisService:
         citations_json = self.extract_citations_llm(references_text)
 
         # Verify citations using the improved method
-        verified_citations = self.verify_citations_improved(references_text, citations_json["citations"])
-
+        valid_citations = self.verify_citations_improved(references_text, citations_json["citations"])
         return {
             "persona": persona_name,
             "feedback": {
                 "analysis": llm_output,
-                "citations": verified_citations
+                "citations": valid_citations
             }
         }
 
@@ -62,7 +61,7 @@ Each citation object MUST contain exactly these fields in this order:
 3. "published" (array) — a single-element array with the year as integer, e.g. [1998].
 4. "id" (integer) — a running index starting at 1.
 5. "doi" — always null at extraction stage.
-6. "verified" (boolean) — always false at extraction stage.
+6. "valid" (boolean) — always false at extraction stage.
 
 Rules: 
 - RETURN ONLY JSON. No commentary, no extra text, no markdown fences. 
@@ -74,24 +73,24 @@ Rules:
 
 OUTPUT FORMAT EXAMPLE:
 {
-  "citations": [
-    {
-      "title": "Lenin and philosophy and other essays",
-      "authors": ["Althusser, L."],
-      "published": [1971],
-      "id": 1,
-      "doi": null,
-      "verified": false
-    },
-    {
-      "title": "To-do is to be: Foucault, Levinas, and technologically mediated subjectivation",
-      "authors": ["Bergen, J. P.", "Verbeek, P.-P."],
-      "published": [2021],
-      "id": 2,
-      "doi": null,
-      "verified": false
-    }
-  ]
+    "citations": [
+        {
+            "title": "Lenin and philosophy and other essays",
+            "authors": ["Althusser, L."],
+            "published": [1971],
+            "id": 1,
+            "doi": null,
+            "valid": false
+        },
+        {
+            "title": "To-do is to be: Foucault, Levinas, and technologically mediated subjectivation",
+            "authors": ["Bergen, J. P.", "Verbeek, P.-P."],
+            "published": [2021],
+            "id": 2,
+            "doi": null,
+            "valid": false
+        }
+    ]
 }
 
 TEXT:
@@ -131,15 +130,15 @@ TEXT:
 
     def verify_citations_improved(self, references_text: str, citations: list) -> list:
         """
-        Improved verification using the approach from the working script.
+        Improved validation using the approach from the working script.
         First try to extract DOIs from the raw references text, then fall back to title search.
         """
 
         # Extract raw references from the text
         raw_refs = self._extract_references(references_text)
         unique_refs = list(dict.fromkeys(raw_refs))
-        
-        verified_citations = []
+
+        valid_citations = []
         seen_dois = set()
         seen_titles = set()
 
@@ -151,95 +150,84 @@ TEXT:
             else:
                 # Fallback: use title + authors + year to reconstruct
                 authors_str = " ".join(citation.get("authors", []))
-                year_str = str(citation.get("published", [""])[0])
+                published = citation.get("published")
+                if isinstance(published, list) and published:
+                    year_str = str(published[0])
+                else:
+                    year_str = ""
                 citation_to_raw[citation["id"]] = f"{authors_str} ({year_str}) {citation.get('title', '')}"
 
         # Verify each citation
         for citation in citations:
             raw_ref = citation_to_raw.get(citation["id"], "")
-            
-            # Step 1: Try to extract DOI from raw reference
+            found_valid = False
+            # Step 1: Try to extract DOI from raw reference and CrossRef lookup
             ref_dois = self._extract_dois(raw_ref)
-            doi_found = False
-            
             if ref_dois:
                 for doi in ref_dois:
                     if doi in seen_dois:
                         continue
                     result = self._verify_doi_crossref(doi)
-                    if result:
-                        # Update citation with verified data
+                    if result and result.get("valid"):
                         citation["doi"] = doi
-                        citation["verified"] = True
+                        citation["valid"] = True
                         if result.get("title") and not citation.get("title"):
                             citation["title"] = result["title"]
                         if result.get("authors") and not citation.get("authors"):
                             citation["authors"] = result["authors"]
                         if result.get("published") and not citation.get("published"):
                             citation["published"] = result["published"]
-                            
-                        verified_citations.append(citation)
+                        valid_citations.append(citation)
                         seen_dois.add(doi)
                         if citation.get("title"):
                             seen_titles.add(citation["title"].lower())
-                        doi_found = True
+                        found_valid = True
                         break
-            
-            if doi_found:
-                continue  # Skip to next citation if DOI was found and verified
+            # Step 2: If not valid by DOI, try fuzzywuzzy title search
+            if not found_valid:
+                title = citation.get("title", "")
+                authors = citation.get("authors", [])
+                published = citation.get("published")
+                if isinstance(published, list) and published:
+                    year = published[0]
+                else:
+                    year = None
+                result = self._search_crossref_by_title(raw_ref, title, authors, year)
+                if result and result.get("title") and result.get("valid"):
+                    def normalize(text):
+                        import string
+                        return ''.join([c for c in text.lower() if c not in string.punctuation]).strip()
+                    ref_norm = normalize(raw_ref)
+                    title_norm = normalize(result["title"])
+                    ratio = fuzz.ratio(title_norm, ref_norm)
+                    partial = fuzz.partial_ratio(title_norm, ref_norm)
+                    token_sort = fuzz.token_sort_ratio(title_norm, ref_norm)
+                    token_set = fuzz.token_set_ratio(title_norm, ref_norm)
+                    if (
+                        ratio > 75 or
+                        partial > 80 or
+                        token_sort > 80 or
+                        token_set > 85 or
+                        (title_norm in ref_norm and len(title_norm) > 10) or
+                        (ref_norm in title_norm and len(ref_norm) > 10)
+                    ) and title_norm not in seen_titles:
+                        citation["doi"] = result.get("doi")
+                        citation["valid"] = True
+                        if result.get("title") and not citation.get("title"):
+                            citation["title"] = result["title"]
+                        if result.get("authors") and not citation.get("authors"):
+                            citation["authors"] = result["authors"]
+                        if result.get("published") and not citation.get("published"):
+                            citation["published"] = result["published"]
+                        valid_citations.append(citation)
+                        seen_titles.add(title_norm)
+                        found_valid = True
+            # Step 3: If neither CrossRef nor fuzzywuzzy matched, mark as unverified
+            if not found_valid:
+                citation["valid"] = False
+                valid_citations.append(citation)
 
-            # Step 2: No DOI found, try title search with fuzzy matching
-            title = citation.get("title", "")
-            authors = citation.get("authors", [])
-            year = citation.get("published", [None])[0]
-            
-            result = self._search_crossref_by_title(raw_ref, title, authors, year)
-            match_found = False
-            
-            if result and result.get("title"):
-                # Robust fuzzy matching like in the working script
-                def normalize(text):
-                    import string
-                    return ''.join([c for c in text.lower() if c not in string.punctuation]).strip()
-                
-                ref_norm = normalize(raw_ref)
-                title_norm = normalize(result["title"])
-                
-                ratio = fuzz.ratio(title_norm, ref_norm)
-                partial = fuzz.partial_ratio(title_norm, ref_norm)
-                token_sort = fuzz.token_sort_ratio(title_norm, ref_norm)
-                token_set = fuzz.token_set_ratio(title_norm, ref_norm)
-                
-                # Accept if any metric is high enough
-                if (
-                    ratio > 80 or
-                    partial > 85 or
-                    token_sort > 85 or
-                    token_set > 90 or
-                    (title_norm in ref_norm and len(title_norm) > 10) or
-                    (ref_norm in title_norm and len(ref_norm) > 10)
-                ) and title_norm not in seen_titles:
-                    
-                    # Update citation with verified data
-                    citation["doi"] = result.get("doi")
-                    citation["verified"] = True
-                    if result.get("title") and not citation.get("title"):
-                        citation["title"] = result["title"]
-                    if result.get("authors") and not citation.get("authors"):
-                        citation["authors"] = result["authors"]
-                    if result.get("published") and not citation.get("published"):
-                        citation["published"] = result["published"]
-                    
-                    verified_citations.append(citation)
-                    seen_titles.add(title_norm)
-                    match_found = True
-            
-            if not match_found:
-                # Keep the citation but mark as unverified
-                citation["verified"] = False
-                verified_citations.append(citation)
-
-        return verified_citations
+        return valid_citations
 
     def _get_references_section(self, text: str) -> str:
         """
@@ -251,35 +239,46 @@ TEXT:
         return text
 
     def _extract_dois(self, text: str):
-        doi_pattern = r"10\.\d{4,9}/[-._;()/:A-Z0-9]+"
-        return re.findall(doi_pattern, text, flags=re.I)
+        """More comprehensive DOI extraction"""
+        # Standard DOI pattern
+        doi_pattern = r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b"
+        dois = re.findall(doi_pattern, text, flags=re.I)
+        # Also look for DOIs in common formats like "doi:10.1234/abc"
+        doi_prefix_pattern = r"(?:doi\s*[:=\s]*)\s*(10\.\d{4,9}/[-._;()/:A-Z0-9]+)"
+        dois.extend(re.findall(doi_prefix_pattern, text, flags=re.I))
+        # Remove duplicates while preserving order
+        seen = set()
+        return [x for x in dois if not (x in seen or seen.add(x))]
 
     def _extract_references(self, text: str):
         """
-        Extract references as blocks of lines, joining multi-line references.
-        Handles both numbered and unnumbered references.
-        Assumes input is the references section only.
+        Robustly extract references as blocks, handling numbered, author-year, and unnumbered references, and joining multi-line entries. Normalizes whitespace and removes short/empty refs.
         """
         lines = [line.strip() for line in text.split("\n") if line.strip()]
         refs = []
         current_ref = []
-        # Pattern for numbered references (e.g., 1. or 12.)
+        # Patterns for reference starts
         numbered_pattern = re.compile(r'^(\d{1,3})[.\)]\s+')
-        # Pattern for author-year references
         author_year_pattern = re.compile(r'^[A-Z][^\n]*\(\d{4}[a-z]?\)')
+        # e.g. Smith J, 2020, or Smith J. (2020)
+        year_pattern = re.compile(r'\(\d{4}[a-z]?\)|\b\d{4}[a-z]?\b')
 
         for line in lines:
             is_new_ref = False
+            # Heuristics for new reference
             if numbered_pattern.match(line):
                 is_new_ref = True
             elif author_year_pattern.match(line):
+                is_new_ref = True
+            elif year_pattern.search(line) and (not current_ref or len(current_ref) > 0 and len(current_ref[-1]) < 40):
+                # If line contains a year and previous ref is short, treat as new
                 is_new_ref = True
             elif not current_ref:
                 is_new_ref = True
 
             if is_new_ref:
                 if current_ref:
-                    refs.append(' '.join(current_ref))
+                    refs.append(' '.join(current_ref).strip())
                     current_ref = []
                 current_ref.append(line)
             else:
@@ -287,9 +286,9 @@ TEXT:
                 if current_ref:
                     current_ref.append(line)
         if current_ref:
-            refs.append(' '.join(current_ref))
-        # Remove any empty or very short references
-        refs = [ref for ref in refs if len(ref) > 10]
+            refs.append(' '.join(current_ref).strip())
+        # Remove any empty or very short references, normalize whitespace
+        refs = [re.sub(r'\s+', ' ', ref).strip() for ref in refs if len(ref) > 10]
         return refs
 
     def _verify_doi_crossref(self, doi: str):
@@ -298,6 +297,10 @@ TEXT:
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json().get("message", {})
+                # Defensive: prefer published-print, fallback to issued, else None
+                published = data.get("published-print", {}).get("date-parts", [[]])
+                if not published or not published[0]:
+                    published = data.get("issued", {}).get("date-parts", [[]])
                 return {
                     "doi": doi,
                     "title": data.get("title", [""])[0],
@@ -305,25 +308,29 @@ TEXT:
                         f"{a.get('family', '')}, {a.get('given', '')}"
                         for a in data.get("author", [])
                     ],
-                    "published": data.get("published-print", {}).get("date-parts", [[]])[0],
+                    "published": published[0] if published and published[0] else None,
                     "source": "CrossRef",
-                    "valid": True
+                    "valid": True if data.get("title") else False
                 }
         except Exception:
             pass
         return None
 
     def _search_crossref_by_title(self, raw_ref: str, title: str, authors: list, year: int):
-        """Improved: search CrossRef by title with fuzzy + author matching."""
+        """Advanced: search CrossRef by title with robust normalization, scoring, and lower threshold."""
         url = "https://api.crossref.org/works"
 
         def normalize(text):
-            return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', text.lower())).strip()
+            # Remove punctuation, lowercase, collapse whitespace, remove stopwords
+            text = re.sub(r'[^\w\s]', '', text.lower())
+            text = re.sub(r'\s+', ' ', text).strip()
+            stopwords = set(['the', 'and', 'of', 'in', 'on', 'for', 'with', 'a', 'an', 'to'])
+            return ' '.join([w for w in text.split() if w not in stopwords])
 
         try:
             # Use both the raw reference and the extracted title for better results
             query = raw_ref if len(raw_ref) > len(title) else title
-            response = requests.get(url, params={"query.title": query, "rows": 5}, timeout=5)
+            response = requests.get(url, params={"query.title": query, "rows": 7}, timeout=5)
             if response.status_code != 200:
                 return None
 
@@ -332,39 +339,42 @@ TEXT:
                 return None
 
             ref_norm = normalize(raw_ref)
+            title_norm = normalize(title)
             best_item, best_score = None, 0
 
             for item in items:
                 item_title = item.get("title", [""])[0]
-                title_norm = normalize(item_title)
+                item_title_norm = normalize(item_title)
 
+                # Score: combine ref-title, title-title, and token set ratios
                 score = max(
-                    fuzz.ratio(ref_norm, title_norm),
-                    fuzz.partial_ratio(ref_norm, title_norm),
-                    fuzz.token_set_ratio(ref_norm, title_norm)
+                    fuzz.ratio(ref_norm, item_title_norm),
+                    fuzz.partial_ratio(ref_norm, item_title_norm),
+                    fuzz.token_set_ratio(ref_norm, item_title_norm),
+                    fuzz.ratio(title_norm, item_title_norm),
+                    fuzz.token_set_ratio(title_norm, item_title_norm)
                 )
 
-                # Small boost if any author's surname appears in ref
+                # Boost if any author's surname appears in ref or title
                 if "author" in item:
                     item_authors = [a.get("family", "").lower() for a in item.get("author", [])]
-                    if any(a and a in ref_norm for a in item_authors):
-                        score += 5
+                    if any(a and (a in ref_norm or a in title_norm) for a in item_authors):
+                        score += 7
 
-                # Small boost if year matches
+                # Boost if year matches
                 item_year = None
                 if "published-print" in item and "date-parts" in item["published-print"]:
                     item_year = item["published-print"]["date-parts"][0][0]
                 elif "issued" in item and "date-parts" in item["issued"]:
                     item_year = item["issued"]["date-parts"][0][0]
-                
                 if year and item_year and year == item_year:
-                    score += 5
+                    score += 7
 
                 if score > best_score:
                     best_score, best_item = score, item
 
-            # Only accept if similarity high enough
-            if best_item and best_score >= 70:
+            # Accept if similarity is reasonably high (lowered threshold)
+            if best_item and best_score >= 60:
                 return {
                     "doi": best_item.get("DOI", ""),
                     "title": best_item.get("title", [""])[0],

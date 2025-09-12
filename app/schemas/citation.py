@@ -6,7 +6,7 @@ class Citation(BaseModel):
     authors: List[str]
     published: Optional[List[int]] = None
     doi: Optional[str] = None
-    verified: bool = False
+    valid: bool = False
 
 class CitationsResponse(BaseModel):
     citations: List[Citation]

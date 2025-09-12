@@ -489,6 +489,35 @@ Search personas by personality traits.
 - `skip` (int, optional): Number of personas to skip (default: 0)
 - `limit` (int, optional): Maximum number of personas to return (default: 100)
 
+## Reference Extraction Endpoint
+
+### POST `/api/extract_references`
+Extracts and returns structured references from a document or references section.
+
+**Request Body:**
+```json
+{
+  "text": "string (full document or references section)"
+}
+```
+
+**Response:**
+```json
+{
+  "references": [
+    "Smith J, 2020, Title of Paper, Journal Name, 12(3), 45-56.",
+    "Doe A, 2019, Another Article, Another Journal, 5(1), 10-20."
+  ]
+}
+```
+
+**Description:**
+- Accepts raw text (full document or just the references section).
+- Returns a list of parsed reference strings, each representing a single reference entry.
+- Handles multi-line, numbered, and author-year references robustly.
+
+---
+
 ## Error Responses
 
 All endpoints return standard HTTP status codes:
