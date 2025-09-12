@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
@@ -10,6 +11,28 @@ router = APIRouter(
     tags=["personas"],
     responses={404: {"description": "Persona not found"}},
 )
+
+# POST endpoint to create a new persona (for testing/manual addition)
+@router.post("/", response_model=PersonaResponse, status_code=status.HTTP_201_CREATED, summary="Create a new persona")
+async def create_persona(
+    persona: PersonaCreate,
+    db: Session = Depends(get_db)
+):
+    # Check if persona already exists (case-insensitive)
+    existing = db.query(Persona).filter(func.lower(Persona.name) == persona.name.lower()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Persona with this name already exists.")
+    new_persona = Persona(
+        name=persona.name,
+        description=persona.description,
+        personality_traits=persona.personality_traits,
+        system_prompt=persona.system_prompt,
+        is_active=True
+    )
+    db.add(new_persona)
+    db.commit()
+    db.refresh(new_persona)
+    return new_persona
 
 @router.get("/", response_model=List[PersonaResponse], summary="Get all personas")
 async def get_personas(
