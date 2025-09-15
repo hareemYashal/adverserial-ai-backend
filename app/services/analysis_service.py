@@ -3,14 +3,369 @@ import re
 import json
 import requests
 from openai import OpenAI
-from fuzzywuzzy import fuzz
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 
 class AnalysisService:
+
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY)
         self.client = OpenAI(api_key=api_key)
+
+    def verify_citations_llm(self, references: list, paper_content: str = None) -> list:
+        """
+        Validate references via CrossRef/OpenAlex/PubMed API.
+        Returns a list of citation dicts with required fields.
+        """
+        verified_refs = []
+
+        # First verify all existing references
+        for ref in references:
+            if isinstance(ref, dict):  # structured ref
+                title = ref.get("title", "").strip()
+                authors = ref.get("authors", [])
+                year = None
+                if isinstance(ref.get("published"), list) and ref["published"]:
+                    year = ref["published"][0]
+                elif isinstance(ref.get("published"), int):
+                    year = ref.get("published")
+            else:  # fallback if ref is a string
+                title = str(ref).strip()
+                authors = []
+                year = None
+
+            if not title:
+                continue
+
+            # Try CrossRef first, then OpenAlex, then PubMed
+            verified_ref = self._verify_reference_with_crossref(title, authors, year)
+            if not verified_ref["valid"]:
+                verified_ref = self._verify_reference_with_openalex(title, authors, year)
+            if not verified_ref["valid"]:
+                verified_ref = self._verify_reference_with_pubmed(title, authors, year)
+
+            verified_refs.append(verified_ref)
+
+        # Get additional citations (if requested) and add them at the end
+        if paper_content:
+            additional_citations = self._get_additional_citations(paper_content)
+            for citation in additional_citations:
+                citation["additional_citation"] = True
+                verified_refs.append(citation)
+
+        return verified_refs
+    def _verify_reference_with_openalex(self, title: str, authors: list, year: int):
+        """Query OpenAlex to validate a reference with strict matching"""
+        if not title:
+            return self._create_fallback_ref(title, authors, year)
+
+        url = "https://api.openalex.org/works"
+        params = {
+            "filter": f"title.search:{title}",
+            "per-page": 5
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                results = response.json().get("results", [])
+                for item in results:
+                    # Extract publication year
+                    pub_year = item.get("publication_year")
+                    if year and pub_year and int(pub_year) != int(year):
+                        continue
+
+                    # Check title similarity
+                    item_title = item.get("title", "")
+                    if not self._is_exact_title_match(title, item_title):
+                        continue
+
+                    # Extract authors
+                    item_authors = []
+                    for a in item.get("authorships", []):
+                        author_name = a.get("author", {}).get("display_name")
+                        if author_name:
+                            item_authors.append(author_name)
+
+                    # Check author similarity
+                    if authors and not self._are_authors_similar(authors, item_authors):
+                        continue
+
+                    doi = item.get("doi")
+                    return {
+                        "title": item_title,
+                        "authors": item_authors,
+                        "published": [pub_year] if pub_year else [],
+                        "doi": doi if doi else None,
+                        "valid": True,
+                        "additional_citation": False
+                    }
+        except Exception as e:
+            print(f"[OpenAlex Error] {e}")
+
+        return self._create_fallback_ref(title, authors, year)
+
+    def _get_additional_citations(self, paper_content: str) -> list:
+        """Get additional relevant citations based on paper content"""
+        prompt = (
+            "Based on the following paper content, suggest 2-3 highly relevant academic references. "
+            "Return ONLY a JSON array of objects with fields: title, authors, published.\n\n"
+            f"Paper Content Excerpt:\n{paper_content[:2000]}\n\n"
+            "Example format:\n"
+            "[\n"
+            '  {"title": "Example Title", "authors": ["Author1, A.", "Author2, B."], "published": [2020]}\n'
+            "]"
+        )
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a scholarly assistant. Return only valid JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                max_tokens=800,
+            )
+            text_out = response.choices[0].message.content.strip()
+            
+            suggested = self.safe_parse_json(text_out)
+            verified_suggestions = []
+            
+            for sug in suggested:
+                title = sug.get("title", "").strip()
+                authors = sug.get("authors", [])
+                year = None
+                if isinstance(sug.get("published"), list) and sug["published"]:
+                    year = sug["published"][0]
+
+                if not title:
+                    continue
+
+                # Verify the suggested citation
+                verified = self._verify_reference_with_crossref(title, authors, year)
+                if not verified["valid"]:
+                    verified = self._verify_reference_with_pubmed(title, authors, year)
+                
+                verified_suggestions.append(verified)
+                
+            return verified_suggestions
+            
+        except Exception as e:
+            print(f"[Additional Citations Error] {e}")
+            return []
+
+    def safe_parse_json(self, maybe_json: str):
+        """Safely parse JSON from LLM output"""
+        maybe_json = maybe_json.strip()
+        maybe_json = re.sub(r"^```(?:json)?", "", maybe_json)
+        maybe_json = re.sub(r"```$", "", maybe_json)
+        maybe_json = maybe_json.strip()
+        try:
+            return json.loads(maybe_json)
+        except Exception:
+            # Try to find JSON array pattern
+            m = re.search(r'(\[.*\])', maybe_json, re.DOTALL)
+            if m:
+                try:
+                    return json.loads(m.group(1))
+                except Exception:
+                    pass
+        return []
+
+    def _verify_reference_with_crossref(self, title: str, authors: list, year: int):
+        """Query CrossRef to validate a reference with strict matching"""
+        if not title:
+            return self._create_fallback_ref(title, authors, year)
+            
+        url = "https://api.crossref.org/works"
+        params = {
+            "query.title": title,
+            "rows": 5,
+            "select": "DOI,title,author,issued"
+        }
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                items = response.json().get("message", {}).get("items", [])
+                
+                for item in items:
+                    # Extract publication year
+                    pub_year = None
+                    date_parts = item.get("issued", {}).get("date-parts", [])
+                    if date_parts and date_parts[0]:
+                        pub_year = date_parts[0][0]
+                    
+                    # Strict year matching
+                    if year and pub_year and int(pub_year) != int(year):
+                        continue
+                    
+                    # Check title similarity
+                    item_title = item.get("title", [""])[0] if item.get("title") else ""
+                    if not self._is_exact_title_match(title, item_title):
+                        continue
+                    
+                    # Extract authors
+                    item_authors = []
+                    for a in item.get("author", []):
+                        if a.get("family") and a.get("given"):
+                            item_authors.append(f"{a.get('family')}, {a.get('given')}")
+                    
+                    # Check author similarity
+                    if authors and not self._are_authors_similar(authors, item_authors):
+                        continue
+                    
+                    doi = item.get("DOI")
+                    return {
+                        "title": item_title,
+                        "authors": item_authors,
+                        "published": [pub_year] if pub_year else [],
+                        "doi": f"https://doi.org/{doi}" if doi else None,
+                        "valid": True,
+                        "additional_citation": False
+                    }
+                    
+        except Exception as e:
+            print(f"[CrossRef Error] {e}")
+
+        return self._create_fallback_ref(title, authors, year)
+
+    def _verify_reference_with_pubmed(self, title: str, authors: list, year: int):
+        """Query PubMed to validate a reference with strict matching"""
+        if not title:
+            return self._create_fallback_ref(title, authors, year)
+            
+        # First search for the article
+        search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+        search_params = {
+            "db": "pubmed",
+            "term": f'"{title}"[Title]',
+            "retmode": "json",
+            "retmax": 3
+        }
+        
+        if year:
+            search_params["term"] += f" AND {year}[Date - Publication]"
+        
+        try:
+            search_response = requests.get(search_url, params=search_params, timeout=10)
+            if search_response.status_code == 200:
+                search_data = search_response.json()
+                id_list = search_data.get("esearchresult", {}).get("idlist", [])
+                
+                if not id_list:
+                    return self._create_fallback_ref(title, authors, year)
+                
+                # Get details for the first result
+                summary_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+                summary_params = {
+                    "db": "pubmed",
+                    "id": id_list[0],
+                    "retmode": "json"
+                }
+                
+                summary_response = requests.get(summary_url, params=summary_params, timeout=10)
+                if summary_response.status_code == 200:
+                    summary_data = summary_response.json()
+                    result = summary_data.get("result", {}).get(id_list[0], {})
+                    
+                    pub_title = result.get("title", "")
+                    pub_date = result.get("pubdate", "")
+                    
+                    # Extract year from publication date
+                    pub_year = None
+                    if pub_date:
+                        year_match = re.search(r'(\d{4})', pub_date)
+                        if year_match:
+                            pub_year = year_match.group(1)
+                    
+                    # Strict matching
+                    if year and pub_year and int(pub_year) != int(year):
+                        return self._create_fallback_ref(title, authors, year)
+                    
+                    if not self._is_exact_title_match(title, pub_title):
+                        return self._create_fallback_ref(title, authors, year)
+                    
+                    # Extract authors
+                    pub_authors = []
+                    for author in result.get("authors", []):
+                        if author.get("name"):
+                            pub_authors.append(author.get("name"))
+                        elif author.get("lastname") and author.get("forename"):
+                            pub_authors.append(f"{author.get('lastname')}, {author.get('forename')}")
+                    
+                    # Get DOI from article IDs
+                    doi = None
+                    for article_id in result.get("articleids", []):
+                        if article_id.get("idtype") == "doi":
+                            doi = article_id.get("value")
+                            break
+                    
+                    return {
+                        "title": pub_title,
+                        "authors": pub_authors,
+                        "published": [int(pub_year)] if pub_year and pub_year.isdigit() else [],
+                        "doi": f"https://doi.org/{doi}" if doi else None,
+                        "valid": True,
+                        "additional_citation": False
+                    }
+                    
+        except Exception as e:
+            print(f"[PubMed Error] {e}")
+
+        return self._create_fallback_ref(title, authors, year)
+
+    def _create_fallback_ref(self, title: str, authors: list, year: int):
+        """Create a fallback reference when verification fails"""
+        return {
+            "title": title,
+            "authors": authors,
+            "published": [year] if year else [],
+            "doi": None,
+            "valid": False,
+            "additional_citation": False
+        }
+
+    def _is_exact_title_match(self, title1: str, title2: str) -> bool:
+        """Check if two titles match exactly (case-insensitive, punctuation ignored)"""
+        if not title1 or not title2:
+            return False
+            
+        # Normalize titles: lowercase, remove punctuation, extra spaces
+        normalize = lambda t: re.sub(r'[^\w\s]', '', t.lower()).strip()
+        t1 = normalize(title1)
+        t2 = normalize(title2)
+        
+        return t1 == t2
+
+    def _are_authors_similar(self, authors1: list, authors2: list) -> bool:
+        """Check if author lists are similar"""
+        if not authors1 or not authors2:
+            return True
+            
+        # Extract last names
+        def extract_last_names(authors):
+            last_names = []
+            for author in authors:
+                if isinstance(author, str):
+                    if ',' in author:
+                        last_names.append(author.split(',')[0].strip().lower())
+                    else:
+                        parts = author.split()
+                        if parts:
+                            last_names.append(parts[-1].lower())
+            return last_names
+        
+        last_names1 = extract_last_names(authors1)
+        last_names2 = extract_last_names(authors2)
+        
+        # If we can't extract names, assume they match
+        if not last_names1 or not last_names2:
+            return True
+            
+        # Check if at least one author matches
+        return any(name in last_names2 for name in last_names1)
 
     def analyze(self, document_text: str, persona_name: str) -> dict:
         persona = persona_service.get_by_name(persona_name)
@@ -33,14 +388,18 @@ class AnalysisService:
         # Extract references section and parse with LLM
         references_text = self._get_references_section(document_text)
         citations_json = self.extract_citations_llm(references_text)
+        
+        # Verify citations
+        verified_citations = self.verify_citations_llm(
+            citations_json.get("citations", []), 
+            document_text
+        )
 
-        # Verify citations using the improved method
-        valid_citations = self.verify_citations_improved(references_text, citations_json["citations"])
         return {
             "persona": persona_name,
             "feedback": {
                 "analysis": llm_output,
-                "citations": valid_citations
+                "citations": verified_citations  # Only one citations array
             }
         }
 
@@ -69,7 +428,7 @@ Rules:
 - Identify reference boundaries by "Author(s), YEAR". Capture wrapped lines until the next author-year or end of block. 
 - For published date: take the first 4-digit year inside parentheses after authors.
 - For title: extract the sentence immediately after the year period. Stop before publisher/journal info. 
-- Exclude DOIs, URLs, page numbers, publisher, and editors from the title. add above changes in it
+- Exclude DOIs, URLs, page numbers, publisher, and editors from the title.
 
 OUTPUT FORMAT EXAMPLE:
 {
@@ -81,14 +440,6 @@ OUTPUT FORMAT EXAMPLE:
             "id": 1,
             "doi": null,
             "valid": false
-        },
-        {
-            "title": "To-do is to be: Foucault, Levinas, and technologically mediated subjectivation",
-            "authors": ["Bergen, J. P.", "Verbeek, P.-P."],
-            "published": [2021],
-            "id": 2,
-            "doi": null,
-            "valid": false
         }
     ]
 }
@@ -96,302 +447,43 @@ OUTPUT FORMAT EXAMPLE:
 TEXT:
 <<<REFERENCES_TEXT>>>
 """
-
         prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:150000])
-
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.0,
-            max_tokens=3000,
-        )
-
-        text_out = response.choices[0].message.content.strip()
-
-        # Safe JSON parse
-        def safe_parse_json(maybe_json: str):
-            maybe_json = maybe_json.strip()
-            try:
-                return json.loads(maybe_json)
-            except Exception:
-                m = re.search(r"(\{(?:.|\n)*\})", maybe_json)
-                if m:
-                    try:
-                        return json.loads(m.group(1))
-                    except Exception:
-                        pass
-            raise ValueError("Could not parse JSON from model output")
-
-        parsed = safe_parse_json(text_out)
-        return parsed
-
-    def verify_citations_improved(self, references_text: str, citations: list) -> list:
-        """
-        Improved validation using the approach from the working script.
-        First try to extract DOIs from the raw references text, then fall back to title search.
-        """
-
-        # Extract raw references from the text
-        raw_refs = self._extract_references(references_text)
-        unique_refs = list(dict.fromkeys(raw_refs))
-
-        valid_citations = []
-        seen_dois = set()
-        seen_titles = set()
-
-        # Map each citation to its raw reference text
-        citation_to_raw = {}
-        for i, citation in enumerate(citations):
-            if i < len(unique_refs):
-                citation_to_raw[citation["id"]] = unique_refs[i]
-            else:
-                # Fallback: use title + authors + year to reconstruct
-                authors_str = " ".join(citation.get("authors", []))
-                published = citation.get("published")
-                if isinstance(published, list) and published:
-                    year_str = str(published[0])
-                else:
-                    year_str = ""
-                citation_to_raw[citation["id"]] = f"{authors_str} ({year_str}) {citation.get('title', '')}"
-
-        # Verify each citation
-        for citation in citations:
-            raw_ref = citation_to_raw.get(citation["id"], "")
-            found_valid = False
-            # Step 1: Try to extract DOI from raw reference and CrossRef lookup
-            ref_dois = self._extract_dois(raw_ref)
-            if ref_dois:
-                for doi in ref_dois:
-                    if doi in seen_dois:
-                        continue
-                    result = self._verify_doi_crossref(doi)
-                    if result and result.get("valid"):
-                        citation["doi"] = doi
-                        citation["valid"] = True
-                        if result.get("title") and not citation.get("title"):
-                            citation["title"] = result["title"]
-                        if result.get("authors") and not citation.get("authors"):
-                            citation["authors"] = result["authors"]
-                        if result.get("published") and not citation.get("published"):
-                            citation["published"] = result["published"]
-                        valid_citations.append(citation)
-                        seen_dois.add(doi)
-                        if citation.get("title"):
-                            seen_titles.add(citation["title"].lower())
-                        found_valid = True
-                        break
-            # Step 2: If not valid by DOI, try fuzzywuzzy title search
-            if not found_valid:
-                title = citation.get("title", "")
-                authors = citation.get("authors", [])
-                published = citation.get("published")
-                if isinstance(published, list) and published:
-                    year = published[0]
-                else:
-                    year = None
-                result = self._search_crossref_by_title(raw_ref, title, authors, year)
-                if result and result.get("title") and result.get("valid"):
-                    def normalize(text):
-                        import string
-                        return ''.join([c for c in text.lower() if c not in string.punctuation]).strip()
-                    ref_norm = normalize(raw_ref)
-                    title_norm = normalize(result["title"])
-                    ratio = fuzz.ratio(title_norm, ref_norm)
-                    partial = fuzz.partial_ratio(title_norm, ref_norm)
-                    token_sort = fuzz.token_sort_ratio(title_norm, ref_norm)
-                    token_set = fuzz.token_set_ratio(title_norm, ref_norm)
-                    if (
-                        ratio > 75 or
-                        partial > 80 or
-                        token_sort > 80 or
-                        token_set > 85 or
-                        (title_norm in ref_norm and len(title_norm) > 10) or
-                        (ref_norm in title_norm and len(ref_norm) > 10)
-                    ) and title_norm not in seen_titles:
-                        citation["doi"] = result.get("doi")
-                        citation["valid"] = True
-                        if result.get("title") and not citation.get("title"):
-                            citation["title"] = result["title"]
-                        if result.get("authors") and not citation.get("authors"):
-                            citation["authors"] = result["authors"]
-                        if result.get("published") and not citation.get("published"):
-                            citation["published"] = result["published"]
-                        valid_citations.append(citation)
-                        seen_titles.add(title_norm)
-                        found_valid = True
-            # Step 3: If neither CrossRef nor fuzzywuzzy matched, mark as unverified
-            if not found_valid:
-                citation["valid"] = False
-                valid_citations.append(citation)
-
-        return valid_citations
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+                max_tokens=3000,
+            )
+            text_out = response.choices[0].message.content.strip()
+            
+            def safe_parse_json(maybe_json: str):
+                maybe_json = maybe_json.strip()
+                try:
+                    return json.loads(maybe_json)
+                except Exception:
+                    m = re.search(r"(\{(?:.|\n)*\})", maybe_json)
+                    if m:
+                        try:
+                            return json.loads(m.group(1))
+                        except Exception:
+                            pass
+                raise ValueError("Could not parse JSON from model output")
+            
+            parsed = safe_parse_json(text_out)
+            return parsed
+        except Exception as e:
+            print(f"[Citation Extraction Error] {e}")
+            return {"citations": []}
 
     def _get_references_section(self, text: str) -> str:
-        """
-        Extracts the text after the 'References' heading (case-insensitive).
-        """
         match = re.search(r'(?i)\bReferences\b', text)
         if match:
             return text[match.end():].strip()
         return text
-
-    def _extract_dois(self, text: str):
-        """More comprehensive DOI extraction"""
-        # Standard DOI pattern
-        doi_pattern = r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b"
-        dois = re.findall(doi_pattern, text, flags=re.I)
-        # Also look for DOIs in common formats like "doi:10.1234/abc"
-        doi_prefix_pattern = r"(?:doi\s*[:=\s]*)\s*(10\.\d{4,9}/[-._;()/:A-Z0-9]+)"
-        dois.extend(re.findall(doi_prefix_pattern, text, flags=re.I))
-        # Remove duplicates while preserving order
-        seen = set()
-        return [x for x in dois if not (x in seen or seen.add(x))]
-
-    def _extract_references(self, text: str):
-        """
-        Robustly extract references as blocks, handling numbered, author-year, and unnumbered references, and joining multi-line entries. Normalizes whitespace and removes short/empty refs.
-        """
-        lines = [line.strip() for line in text.split("\n") if line.strip()]
-        refs = []
-        current_ref = []
-        # Patterns for reference starts
-        numbered_pattern = re.compile(r'^(\d{1,3})[.\)]\s+')
-        author_year_pattern = re.compile(r'^[A-Z][^\n]*\(\d{4}[a-z]?\)')
-        # e.g. Smith J, 2020, or Smith J. (2020)
-        year_pattern = re.compile(r'\(\d{4}[a-z]?\)|\b\d{4}[a-z]?\b')
-
-        for line in lines:
-            is_new_ref = False
-            # Heuristics for new reference
-            if numbered_pattern.match(line):
-                is_new_ref = True
-            elif author_year_pattern.match(line):
-                is_new_ref = True
-            elif year_pattern.search(line) and (not current_ref or len(current_ref) > 0 and len(current_ref[-1]) < 40):
-                # If line contains a year and previous ref is short, treat as new
-                is_new_ref = True
-            elif not current_ref:
-                is_new_ref = True
-
-            if is_new_ref:
-                if current_ref:
-                    refs.append(' '.join(current_ref).strip())
-                    current_ref = []
-                current_ref.append(line)
-            else:
-                # Continuation of previous reference
-                if current_ref:
-                    current_ref.append(line)
-        if current_ref:
-            refs.append(' '.join(current_ref).strip())
-        # Remove any empty or very short references, normalize whitespace
-        refs = [re.sub(r'\s+', ' ', ref).strip() for ref in refs if len(ref) > 10]
-        return refs
-
-    def _verify_doi_crossref(self, doi: str):
-        url = f"https://api.crossref.org/works/{doi}"
-        try:
-            response = requests.get(url, timeout=5)
-            if response.status_code == 200:
-                data = response.json().get("message", {})
-                # Defensive: prefer published-print, fallback to issued, else None
-                published = data.get("published-print", {}).get("date-parts", [[]])
-                if not published or not published[0]:
-                    published = data.get("issued", {}).get("date-parts", [[]])
-                return {
-                    "doi": doi,
-                    "title": data.get("title", [""])[0],
-                    "authors": [
-                        f"{a.get('family', '')}, {a.get('given', '')}"
-                        for a in data.get("author", [])
-                    ],
-                    "published": published[0] if published and published[0] else None,
-                    "source": "CrossRef",
-                    "valid": True if data.get("title") else False
-                }
-        except Exception:
-            pass
-        return None
-
-    def _search_crossref_by_title(self, raw_ref: str, title: str, authors: list, year: int):
-        """Advanced: search CrossRef by title with robust normalization, scoring, and lower threshold."""
-        url = "https://api.crossref.org/works"
-
-        def normalize(text):
-            # Remove punctuation, lowercase, collapse whitespace, remove stopwords
-            text = re.sub(r'[^\w\s]', '', text.lower())
-            text = re.sub(r'\s+', ' ', text).strip()
-            stopwords = set(['the', 'and', 'of', 'in', 'on', 'for', 'with', 'a', 'an', 'to'])
-            return ' '.join([w for w in text.split() if w not in stopwords])
-
-        try:
-            # Use both the raw reference and the extracted title for better results
-            query = raw_ref if len(raw_ref) > len(title) else title
-            response = requests.get(url, params={"query.title": query, "rows": 7}, timeout=5)
-            if response.status_code != 200:
-                return None
-
-            items = response.json().get("message", {}).get("items", [])
-            if not items:
-                return None
-
-            ref_norm = normalize(raw_ref)
-            title_norm = normalize(title)
-            best_item, best_score = None, 0
-
-            for item in items:
-                item_title = item.get("title", [""])[0]
-                item_title_norm = normalize(item_title)
-
-                # Score: combine ref-title, title-title, and token set ratios
-                score = max(
-                    fuzz.ratio(ref_norm, item_title_norm),
-                    fuzz.partial_ratio(ref_norm, item_title_norm),
-                    fuzz.token_set_ratio(ref_norm, item_title_norm),
-                    fuzz.ratio(title_norm, item_title_norm),
-                    fuzz.token_set_ratio(title_norm, item_title_norm)
-                )
-
-                # Boost if any author's surname appears in ref or title
-                if "author" in item:
-                    item_authors = [a.get("family", "").lower() for a in item.get("author", [])]
-                    if any(a and (a in ref_norm or a in title_norm) for a in item_authors):
-                        score += 7
-
-                # Boost if year matches
-                item_year = None
-                if "published-print" in item and "date-parts" in item["published-print"]:
-                    item_year = item["published-print"]["date-parts"][0][0]
-                elif "issued" in item and "date-parts" in item["issued"]:
-                    item_year = item["issued"]["date-parts"][0][0]
-                if year and item_year and year == item_year:
-                    score += 7
-
-                if score > best_score:
-                    best_score, best_item = score, item
-
-            # Accept if similarity is reasonably high (lowered threshold)
-            if best_item and best_score >= 60:
-                return {
-                    "doi": best_item.get("DOI", ""),
-                    "title": best_item.get("title", [""])[0],
-                    "authors": [
-                        f"{a.get('family', '')}, {a.get('given', '')}"
-                        for a in best_item.get("author", [])
-                    ] if "author" in best_item else [],
-                    "published": best_item.get("issued", {}).get("date-parts", [[]])[0],
-                    "source": "CrossRef",
-                    "valid": True
-                }
-
-        except Exception:
-            pass
-
-        return None
-
 
 # Singleton
 analysis_service = AnalysisService()

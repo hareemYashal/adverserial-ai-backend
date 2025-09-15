@@ -88,7 +88,7 @@ async def chat_with_document(
         doc_id = document.id
 
     # 6. Get persona system prompt for LLM
-    persona_obj = persona_service.get_by_name(persona)
+    persona_obj = persona_service.get_by_name(persona, db)
     if not persona_obj:
         raise HTTPException(status_code=400, detail=f"Persona '{persona}' not found")
 

@@ -5,15 +5,32 @@ from app.services.analysis_service import analysis_service
 from app.models.document import Document
 from app.services.auth_service import get_current_user  # assuming you have JWT auth
 from app.schemas.citation import CitationsResponse
-from pydantic import BaseModel
-from typing import Optional
+from app.schemas import CitationVerificationRequest, CitationVerificationResponse
 
 router = APIRouter(prefix="/api/analyze", tags=["Analysis"])
+
+@router.post("/verify-citations", response_model=CitationVerificationResponse)
+def verify_citations(
+    req: CitationVerificationRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """
+    Verify citations using LLM (CrossRef/PubMed logic) and suggest additional citations.
+    """
+    try:
+        result = analysis_service.verify_citations_llm(req.references, req.paper_content)
+        return CitationVerificationResponse(citations=result)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Citation verification failed: {str(exc)}")
+
+
+from pydantic import BaseModel
+from typing import Optional
 
 class ExtractRequest(BaseModel):
     document_id: Optional[int] = None
     text: Optional[str] = None
-
 @router.post("/")
 def analyze_document(
     project_id: int,
@@ -29,8 +46,13 @@ def analyze_document(
         raise HTTPException(status_code=400, detail="Document has no extracted content")
 
     try:
-        feedback = analysis_service.analyze(document.content, persona_name)
-        return {"persona": persona_name, "feedback": feedback}
+        # This already includes verified citations in the feedback
+        result = analysis_service.analyze(document.content, persona_name)
+        # Return the result directly - it already contains the properly structured citations
+        return {
+            "persona": persona_name,
+            "feedback": result
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -54,10 +76,6 @@ def extract_references(
 
     try:
         out = analysis_service.extract_citations_llm(raw_text)
-        # Run verification on extracted citations
-        if out and "citations" in out:
-            verified = analysis_service.verify_citations_improved(raw_text, out["citations"])
-            out["citations"] = verified
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(exc)}")
     return out

@@ -5,6 +5,8 @@ from .document import DocumentCreate, DocumentResponse, DocumentUpdate
 from .persona import PersonaCreate, PersonaResponse, PersonaUpdate
 from .citation import Citation, CitationsResponse
 
+from .citation_verification import CitationVerificationRequest, CitationVerificationResponse, CitationVerificationResponseItem
+
 __all__ = [
     # User schemas
     "UserCreate", "UserResponse", "UserLogin", "UserUpdate", "UserWithProjects", "Token", "TokenData",
@@ -15,5 +17,7 @@ __all__ = [
     # Persona schemas
     "PersonaCreate", "PersonaResponse", "PersonaUpdate",
     # Citation schemas
-    "Citation", "CitationsResponse"
+    "Citation", "CitationsResponse",
+    # Citation verification schemas
+    "CitationVerificationRequest", "CitationVerificationResponse", "CitationVerificationResponseItem"
 ]
