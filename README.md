@@ -184,15 +184,23 @@ adversarial-ai-backend/
 │   │   └── persona.py
 │   ├── schemas/               # Pydantic schemas for API
 │   │   ├── __init__.py
+|   |   ├── citation_verification.py
+|   |   ├── citation.py
 │   │   ├── user.py
 │   │   ├── project.py
 │   │   ├── document.py
+|   |   ├── rag.py
+|   |   ├── user.py
 │   │   └── persona.py
+
 │   ├── routers/               # API route handlers
 │   │   ├── __init__.py
 |   │   ├── analysis.py
 |   │   ├── mutli_analysis.py
 │   │   ├── auth.py
+|   |   ├── chat.py
+|   |   ├── ingestion.py
+|   |   ├── session.py
 │   │   ├── users.py
 │   │   ├── projects.py
 │   │   ├── documents.py
@@ -204,7 +212,7 @@ adversarial-ai-backend/
 │       ├── analysis_service.py
 │       ├── multi_analysis_service.py
 │       ├── persona_service.py
-│       ├── multi_persona_service.py
+│       ├── multi_persona_service.py   
 │       └── file_service.py
 ├── tests/                     # Comprehensive test suite
 │   ├── test_auth_api.py
