@@ -5,7 +5,7 @@ class Citation(BaseModel):
     title: str
     authors: List[str]
     published: Optional[List[int]] = None
-    doi: Optional[str] = None
+    doi: Optional[str] = None  # May contain DOI, PubMed, WorldCat, or Google Scholar link
     valid: bool = False
 
 class CitationsResponse(BaseModel):

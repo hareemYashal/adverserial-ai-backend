@@ -9,7 +9,7 @@ class CitationVerificationResponseItem(BaseModel):
     title: str
     authors: List[str]
     published: List[int]
-    doi: Optional[str] = None
+    doi: Optional[str] = None  # May contain DOI, PubMed, WorldCat, or Google Scholar link
     valid: bool
     additional_citation: bool
 

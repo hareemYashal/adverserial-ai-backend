@@ -99,7 +99,7 @@ async def chat_simple(
     persona_usage[usage_key] = persona_usage.get(usage_key, 0) + 1
 
     # Save persona to DB after threshold (e.g., 3 uses in a session)
-    USAGE_THRESHOLD = 2
+    USAGE_THRESHOLD = 1
     if persona_usage[usage_key] == USAGE_THRESHOLD:
         # Check if persona already exists (case-insensitive)
         existing = db.query(Persona).filter(func.lower(Persona.name) == persona.lower()).first()

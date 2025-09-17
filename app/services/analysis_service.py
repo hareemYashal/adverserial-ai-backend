@@ -7,6 +7,70 @@ from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 
 class AnalysisService:
+    def _normalize_title(self, title: str) -> str:
+        """Normalize a title for deduplication: lowercase, remove punctuation and extra spaces."""
+        if not title:
+            return ""
+        return re.sub(r'[^\w\s]', '', title.lower()).strip()
+
+    def get_google_scholar_links_llm(self, citations: list) -> list:
+        """
+        Use OpenAI to extract Google Scholar links for a list of citation strings.
+        Returns a list of dicts in the required JSON format:
+        {"title": ..., "authors": [...], "published": [...], "doi": <scholar_link>, "valid": true/false, "additional_citation": false}
+        """
+        if not citations:
+            return []
+
+        prompt = (
+            "You are a scholarly assistant. For each citation below, search Google Scholar and return the best direct Google Scholar result link for that work. "
+            "If no exact match is found, return the most relevant Google Scholar search link for the citation.\n\n"
+            "Return ONLY a valid JSON array of objects, each with these fields:\n"
+            "- 'title': the title of the work,\n"
+            "- 'authors': a list of author names (if available, else an empty list),\n"
+            "- 'published': a list with the publication year as an integer (if available, else an empty list),\n"
+            "- 'doi': the best Google Scholar result link (or search link if no direct result),\n"
+            "- 'valid': true if a link is found, false otherwise,\n"
+            "- 'additional_citation': false\n\n"
+            "CITATIONS:\n"
+        )
+        for idx, c in enumerate(citations, 1):
+            prompt += f"{idx}. {c}\n"
+        prompt += "\nReturn ONLY the JSON array, no extra text, no markdown."
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a scholarly assistant that returns only valid JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.2,
+                max_tokens=2000,
+            )
+            text_out = response.choices[0].message.content.strip()
+            # Try to parse JSON array from output
+            def safe_parse_json(maybe_json: str):
+                maybe_json = maybe_json.strip()
+                try:
+                    return json.loads(maybe_json)
+                except Exception:
+                    import re
+                    m = re.search(r'(\[.*\])', maybe_json, re.DOTALL)
+                    if m:
+                        try:
+                            return json.loads(m.group(1))
+                        except Exception:
+                            pass
+                raise ValueError("Could not parse JSON from model output")
+            return safe_parse_json(text_out)
+        except Exception as e:
+            print(f"[Google Scholar LLM Extraction Error] {e}")
+            return []
+    def _get_google_scholar_link(self, title: str):
+        """Generate a Google Scholar search link for the given title."""
+        from urllib.parse import quote_plus
+        return f"https://scholar.google.com/scholar?q={quote_plus(title)}"
 
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY)
@@ -14,10 +78,14 @@ class AnalysisService:
 
     def verify_citations_llm(self, references: list, paper_content: str = None) -> list:
         """
-        Validate references via CrossRef/OpenAlex/PubMed API.
+        Validate references via CrossRef/PubMed/Google Scholar API.
+                        # Enforce valid: False if doi is None
+                        if verified_ref["doi"] is None:
+                            verified_ref["valid"] = False
         Returns a list of citation dicts with required fields.
         """
         verified_refs = []
+
 
         # First verify all existing references
         for ref in references:
@@ -37,78 +105,50 @@ class AnalysisService:
             if not title:
                 continue
 
-            # Try CrossRef first, then OpenAlex, then PubMed
-            verified_ref = self._verify_reference_with_crossref(title, authors, year)
+            # Try PubMed first, then OpenAlex, then Google Scholar
+            # verified_ref = self._verify_reference_with_crossref(title, authors, year)
+            verified_ref = self._verify_reference_with_pubmed(title, authors, year)
             if not verified_ref["valid"]:
                 verified_ref = self._verify_reference_with_openalex(title, authors, year)
+                # Enforce valid: False if doi is None
+                if verified_ref["doi"] is None:
+                    verified_ref["valid"] = False
             if not verified_ref["valid"]:
-                verified_ref = self._verify_reference_with_pubmed(title, authors, year)
+                gs_link = self._get_google_scholar_link(title)
+                verified_ref = {
+                    "title": title,
+                    "authors": authors,
+                    "published": [year] if year else [],
+                    "doi": gs_link if gs_link else None,
+                    "valid": True if gs_link else False,
+                    "additional_citation": False
+                }
 
             verified_refs.append(verified_ref)
 
         # Get additional citations (if requested) and add them at the end
         if paper_content:
             additional_citations = self._get_additional_citations(paper_content)
+            # Build set of normalized titles from main citations
+            main_titles = set(self._normalize_title(ref["title"]) for ref in verified_refs if ref.get("title"))
+            seen_additional = set()
             for citation in additional_citations:
+                norm_title = self._normalize_title(citation.get("title", ""))
+                # Skip if already in main citations or already added as additional
+                if not norm_title or norm_title in main_titles or norm_title in seen_additional:
+                    continue
                 citation["additional_citation"] = True
                 verified_refs.append(citation)
+                seen_additional.add(norm_title)
 
         return verified_refs
-    def _verify_reference_with_openalex(self, title: str, authors: list, year: int):
-        """Query OpenAlex to validate a reference with strict matching"""
-        if not title:
-            return self._create_fallback_ref(title, authors, year)
 
-        url = "https://api.openalex.org/works"
-        params = {
-            "filter": f"title.search:{title}",
-            "per-page": 5
-        }
-
-        try:
-            response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 200:
-                results = response.json().get("results", [])
-                for item in results:
-                    # Extract publication year
-                    pub_year = item.get("publication_year")
-                    if year and pub_year and int(pub_year) != int(year):
-                        continue
-
-                    # Check title similarity
-                    item_title = item.get("title", "")
-                    if not self._is_exact_title_match(title, item_title):
-                        continue
-
-                    # Extract authors
-                    item_authors = []
-                    for a in item.get("authorships", []):
-                        author_name = a.get("author", {}).get("display_name")
-                        if author_name:
-                            item_authors.append(author_name)
-
-                    # Check author similarity
-                    if authors and not self._are_authors_similar(authors, item_authors):
-                        continue
-
-                    doi = item.get("doi")
-                    return {
-                        "title": item_title,
-                        "authors": item_authors,
-                        "published": [pub_year] if pub_year else [],
-                        "doi": doi if doi else None,
-                        "valid": True,
-                        "additional_citation": False
-                    }
-        except Exception as e:
-            print(f"[OpenAlex Error] {e}")
-
-        return self._create_fallback_ref(title, authors, year)
 
     def _get_additional_citations(self, paper_content: str) -> list:
         """Get additional relevant citations based on paper content"""
         prompt = (
-            "Based on the following paper content, suggest 2-3 highly relevant academic references. "
+            "Based on the following paper content, suggest 6-7 highly relevant academic references that are NOT already present in the references section of the document. "
+            "Do NOT suggest any citation that is already listed in the references. "
             "Return ONLY a JSON array of objects with fields: title, authors, published.\n\n"
             f"Paper Content Excerpt:\n{paper_content[:2000]}\n\n"
             "Example format:\n"
@@ -116,6 +156,16 @@ class AnalysisService:
             '  {"title": "Example Title", "authors": ["Author1, A.", "Author2, B."], "published": [2020]}\n'
             "]"
         )
+        prompt = (
+                "Based on the following paper content, suggest 6-7 highly relevant academic references that are NOT already present in the references section of the document. "
+                "Do NOT suggest any citation that is already listed in the references. "
+                "Return ONLY a JSON array of objects with fields: title, authors, published.\n\n"
+                f"Paper Content Excerpt:\n{paper_content[:2000]}\n\n"
+                "Example format:\n"
+                "[\n"
+                '  {"title": "Example Title", "authors": ["Author1, A.", "Author2, B."], "published": [2020]}\n'
+                "]"
+            )
 
         try:
             response = self.client.chat.completions.create(
@@ -131,24 +181,32 @@ class AnalysisService:
             
             suggested = self.safe_parse_json(text_out)
             verified_suggestions = []
-            
             for sug in suggested:
                 title = sug.get("title", "").strip()
                 authors = sug.get("authors", [])
                 year = None
                 if isinstance(sug.get("published"), list) and sug["published"]:
                     year = sug["published"][0]
-
                 if not title:
                     continue
-
-                # Verify the suggested citation
-                verified = self._verify_reference_with_crossref(title, authors, year)
+                # Verify the suggested citation: PubMed first, then OpenAlex, then Google Scholar
+                verified = self._verify_reference_with_pubmed(title, authors, year)
                 if not verified["valid"]:
-                    verified = self._verify_reference_with_pubmed(title, authors, year)
-                
+                    verified = self._verify_reference_with_openalex(title, authors, year)
+                if not verified["valid"]:
+                    gs_link = self._get_google_scholar_link(title)
+                    verified = {
+                        "title": title,
+                        "authors": authors,
+                        "published": [year] if year else [],
+                        "doi": gs_link if gs_link else None,
+                        "valid": True if gs_link else False,
+                        "additional_citation": False
+                    }
+                # Enforce valid: False if doi is None
+                if verified["doi"] is None:
+                    verified["valid"] = False
                 verified_suggestions.append(verified)
-                
             return verified_suggestions
             
         except Exception as e:
@@ -173,61 +231,103 @@ class AnalysisService:
                     pass
         return []
 
-    def _verify_reference_with_crossref(self, title: str, authors: list, year: int):
-        """Query CrossRef to validate a reference with strict matching"""
+    # def _verify_reference_with_crossref(self, title: str, authors: list, year: int):
+    #     """Query CrossRef to validate a reference with strict matching"""
+    #     if not title:
+    #         return self._create_fallback_ref(title, authors, year)
+    #         
+    #     url = "https://api.crossref.org/works"
+    #     params = {
+    #         "query.title": title,
+    #         "rows": 5,
+    #         "select": "DOI,title,author,issued"
+    #     }
+    #     
+    #     try:
+    #         response = requests.get(url, params=params, timeout=10)
+    #         if response.status_code == 200:
+    #             items = response.json().get("message", {}).get("items", [])
+    #             
+    #             for item in items:
+    #                 # Extract publication year
+    #                 pub_year = None
+    #                 date_parts = item.get("issued", {}).get("date-parts", [])
+    #                 if date_parts and date_parts[0]:
+    #                     pub_year = date_parts[0][0]
+    #                 
+    #                 # Strict year matching
+    #                 if year and pub_year and int(pub_year) != int(year):
+    #                     continue
+    #                 
+    #                 # Check title similarity
+    #                 item_title = item.get("title", [""])[0] if item.get("title") else ""
+    #                 if not self._is_exact_title_match(title, item_title):
+    #                     continue
+    #                 
+    #                 # Extract authors
+    #                 item_authors = []
+    #                 for a in item.get("author", []):
+    #                     if a.get("family") and a.get("given"):
+    #                         item_authors.append(f"{a.get('family')}, {a.get('given')}")
+    #                 
+    #                 # Check author similarity
+    #                 if authors and not self._are_authors_similar(authors, item_authors):
+    #                     continue
+    #                 
+    #                 doi = item.get("DOI")
+    #                 return {
+    #                     "title": item_title,
+    #                     "authors": item_authors,
+    #                     "published": [pub_year] if pub_year else [],
+    #                     "doi": f"https://doi.org/{doi}" if doi else None,
+    #                     "valid": True,
+    #                     "additional_citation": False
+    #                 }
+    #                 
+    #     except Exception as e:
+    #         print(f"[CrossRef Error] {e}")
+    #
+    #     return self._create_fallback_ref(title, authors, year)
+    def _verify_reference_with_openalex(self, title: str, authors: list, year: int):
+        """Query OpenAlex to validate a reference with strict matching"""
         if not title:
             return self._create_fallback_ref(title, authors, year)
-            
-        url = "https://api.crossref.org/works"
+
+        url = "https://api.openalex.org/works"
         params = {
-            "query.title": title,
-            "rows": 5,
-            "select": "DOI,title,author,issued"
+            "filter": f"title.search:{title}",
+            "per-page": 5
         }
-        
+
         try:
             response = requests.get(url, params=params, timeout=10)
             if response.status_code == 200:
-                items = response.json().get("message", {}).get("items", [])
-                
-                for item in items:
-                    # Extract publication year
-                    pub_year = None
-                    date_parts = item.get("issued", {}).get("date-parts", [])
-                    if date_parts and date_parts[0]:
-                        pub_year = date_parts[0][0]
-                    
-                    # Strict year matching
+                results = response.json().get("results", [])
+                for item in results:
+                    pub_year = item.get("publication_year")
                     if year and pub_year and int(pub_year) != int(year):
                         continue
-                    
-                    # Check title similarity
-                    item_title = item.get("title", [""])[0] if item.get("title") else ""
+                    item_title = item.get("title", "")
                     if not self._is_exact_title_match(title, item_title):
                         continue
-                    
-                    # Extract authors
                     item_authors = []
-                    for a in item.get("author", []):
-                        if a.get("family") and a.get("given"):
-                            item_authors.append(f"{a.get('family')}, {a.get('given')}")
-                    
-                    # Check author similarity
+                    for a in item.get("authorships", []):
+                        author_name = a.get("author", {}).get("display_name")
+                        if author_name:
+                            item_authors.append(author_name)
                     if authors and not self._are_authors_similar(authors, item_authors):
                         continue
-                    
-                    doi = item.get("DOI")
+                    doi = item.get("doi")
                     return {
                         "title": item_title,
                         "authors": item_authors,
                         "published": [pub_year] if pub_year else [],
-                        "doi": f"https://doi.org/{doi}" if doi else None,
+                        "doi": doi if doi else None,
                         "valid": True,
                         "additional_citation": False
                     }
-                    
         except Exception as e:
-            print(f"[CrossRef Error] {e}")
+            print(f"[OpenAlex Error] {e}")
 
         return self._create_fallback_ref(title, authors, year)
 
@@ -249,7 +349,7 @@ class AnalysisService:
             search_params["term"] += f" AND {year}[Date - Publication]"
         
         try:
-            search_response = requests.get(search_url, params=search_params, timeout=10)
+            search_response = requests.get(search_url, params=search_params, timeout=20)
             if search_response.status_code == 200:
                 search_data = search_response.json()
                 id_list = search_data.get("esearchresult", {}).get("idlist", [])

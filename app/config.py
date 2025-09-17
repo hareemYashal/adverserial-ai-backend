@@ -30,7 +30,9 @@ CHROMA_DIR: str = os.getenv("CHROMA_DIR", "./chroma")
 CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "rag_collection")
 EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 
+
 OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
 
 TOP_K: int = int(os.getenv("TOP_K", 4))
 MAX_TOKENS_CONTEXT: int = int(os.getenv("MAX_TOKENS_CONTEXT", 2000))
