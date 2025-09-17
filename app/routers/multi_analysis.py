@@ -42,30 +42,10 @@ async def multi_analyze_document(
                 })
             else:
                 results.append(result)
-        verified_citations = []
-
-        dois = multi_analysis_service.extract_dois(document.content)
-        refs = multi_analysis_service.extract_references(document.content)
-        # 1. Verify DOIs against CrossRef
-        for doi in dois:
-            result = multi_analysis_service.verify_doi_crossref(doi)
-            if result:
-                verified_citations.append(result)
-
-        # 2. For non-DOI refs, try CrossRef title search
-        for ref in refs:
-            if any(doi in ref for doi in dois):
-                continue  # already handled
-            result = multi_analysis_service.search_crossref_by_title(ref)
-            if result:
-                verified_citations.append(result)
-            else:
-                # Keep raw if not found
-                verified_citations.append({
-                    "title": ref,
-                    "source": "Unverified",
-                    "valid": False
-                })
+        # Use the improved verification flow: PubMed, OpenAlex, then Google Scholar
+        citations_result = multi_analysis_service.extract_citations_llm(document.content)
+        citations = citations_result.get("citations", []) if citations_result else []
+        verified_citations = multi_analysis_service.verify_citations_llm(citations, document.content)
 
 
         return {
