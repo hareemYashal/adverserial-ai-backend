@@ -51,8 +51,7 @@ async def multi_analyze_document(
         return {
             "document_id": document_id,
             "project_id": project_id,
-            "results": results,
-            "citations": verified_citations
+            "results": results
         }
 
     except Exception as e:

@@ -5,7 +5,7 @@ import json
 import requests
 from openai import AsyncOpenAI
 from openai import OpenAI
-from app.services.multi_persona_services import multi_persona_services
+from app.services.persona_services import persona_service
 from app.config import OPENAI_API_KEY
 from urllib.parse import quote_plus
 
@@ -383,8 +383,9 @@ class Multi_AnalysisService:
         # Check if at least one author matches
         return any(name in last_names2 for name in last_names1)
 
-    async def analyze(self, document_text: str, persona_name: str) -> dict:
-        persona = multi_persona_services.get_by_name(persona_name)
+    async def analyze(self, document_text: str, persona_name: str, db=None) -> dict:
+        # Use persona_service to support both static and dynamic personas
+        persona = persona_service.get_by_name(persona_name, db)
         if not persona:
             raise ValueError(f"Persona '{persona_name}' not found")
 
