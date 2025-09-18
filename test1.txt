@@ -1,0 +1,1540 @@
+{
+  "document_id": 1,
+  "project_id": 1,
+  "results": [
+    {
+      "persona": "Kantian",
+      "feedback": {
+        "analysis": "In evaluating the moral arguments presented in the text through a Kantian lens, several key principles emerge that warrant rigorous scrutiny, particularly regarding the categorical imperative, the emphasis on duty over consequences, and the imperative to respect individuals as ends in themselves.\n\n### Universalization of Maxims\n\nThe authors advocate for a utilitarian framework that prioritizes cost-effectiveness analysis (CEA) in public health, suggesting that the maxim “maximize overall health benefits under budget constraints” can be universalized without contradiction. However, from a Kantian perspective, the moral permissibility of such a maxim must be critically assessed. \n\nKant's first formulation of the categorical imperative requires that maxims should be capable of being willed as universal laws without contradiction. If we were to universalize the maxim of prioritizing efficiency in health resource allocation, we might find that it leads to moral absurdities. For instance, if everyone acted solely to maximize health benefits, it could justify sacrificing the needs of identifiable individuals in favor of statistical lives, thereby undermining the intrinsic value of each person. This would lead to a contradiction in the will, as it would negate the very basis of moral consideration that Kant emphasizes: the recognition of individuals as ends in themselves, deserving of respect and dignity.\n\n### Duty Over Consequences\n\nThe text appears to prioritize outcomes over intentions, suggesting that the end justifies the means. Kantian ethics, however, emphasizes the moral significance of duty and intention. The authors' reliance on efficiency as an ethical standard risks diminishing the moral weight of individual rights and the duty to respect those rights regardless of the potential benefits. For instance, the discussion on the female versus male condom highlights a scenario where the authors argue for the male condom based on cost-effectiveness, potentially leading to greater health outcomes. Yet, this analysis overlooks the duty to empower women and respect their autonomy, which Kantian ethics would hold as paramount. \n\nBy focusing solely on maximizing health benefits, the authors may inadvertently endorse a form of moral calculus that reduces individuals to mere means to an end, violating Kant's imperative to treat humanity—both in oneself and others—as ends in themselves.\n\n### Autonomy and Rational Will\n\nThe arguments presented in the text often assume a collective rational will that seeks to maximize health outcomes, yet they do not sufficiently account for the autonomy of individuals who are affected by these decisions. Kantian ethics emphasizes the importance of autonomy and rational agency. By framing resource allocation decisions within a utilitarian paradigm, the authors risk undermining the autonomy of those who are directly impacted by health policies. \n\nFor example, the notion that “all lives have the same value” aligns with a statistical approach that could lead to the neglect of marginalized populations who may not be adequately represented in aggregate data. This approach fails to respect the rational will of individuals who may have specific needs that differ from the average or majority. Kant would argue that moral actions must consider the inherent dignity of individuals, thus necessitating a more nuanced approach that respects their autonomy.\n\n### Moral Judgments and Universal Obligations\n\nFinally, the text's implications for global health resource allocation highlight the complexity of balancing efficiency with other ethical principles. While the authors assert that efficiency should be the primary ethical guide, Kantian ethics would challenge this assertion by underscoring the necessity of a moral framework that is not merely consequentialist in nature. \n\nKant would argue that while outcomes matter, they should not override the obligation to uphold moral principles that respect individual rights and dignity. This is particularly relevant in the context of global health, where decisions may have profound implications for vulnerable populations. \n\nIn conclusion, while the authors present a compelling argument for the utility of cost-effectiveness analysis in public health, a Kantian evaluation reveals significant moral deficiencies in their reasoning. The categorical imperative calls for a more robust consideration of individual rights, autonomy, and the intrinsic value of human beings, which should not be sacrificed on the altar of efficiency. Thus, any moral framework guiding resource allocation in global health must rigorously respect these Kantian principles to avoid ethical pitfalls and ensure the dignity and respect of all individuals involved.",
+        "citations": [
+          {
+            "title": "Disease control priorities, 3rd edition: improving health and reducing poverty",
+            "authors": [
+              "Jamison DT"
+            ],
+            "published": [
+              2018
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Disease+control+priorities%2C+3rd+edition%3A+improving+health+and+reducing+poverty",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Public spending on health care: how are different criteria related?",
+            "authors": [
+              "Musgrove P"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Public+spending+on+health+care%3A+how+are+different+criteria+related%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Legislating against use of cost-effectiveness information",
+            "authors": [
+              "Neumann PJ",
+              "Weinstein MC"
+            ],
+            "published": [
+              2010
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Legislating+against+use+of+cost-effectiveness+information",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Hidden costs: the ethics of cost-effectiveness analyses for health interventions in resource-limited settings",
+            "authors": [
+              "Rutstein SE",
+              "Price JT",
+              "Rosenberg NE",
+              "Rennie SM",
+              "Biddle AK",
+              "Miller WC"
+            ],
+            "published": [
+              2017
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Hidden+costs%3A+the+ethics+of+cost-effectiveness+analyses+for+health+interventions+in+resource-limited+settings",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Ethical analysis in public health",
+            "authors": [
+              "Roberts MJ",
+              "Reich MR"
+            ],
+            "published": [
+              2002
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Ethical+analysis+in+public+health",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "An introduction to the principles of morals and legislation",
+            "authors": [
+              "Bentham J"
+            ],
+            "published": [
+              1823
+            ],
+            "doi": "https://scholar.google.com/scholar?q=An+introduction+to+the+principles+of+morals+and+legislation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Utilitarianism",
+            "authors": [
+              "Mill JS"
+            ],
+            "published": [
+              1863
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Practical ethics, vol. xiii",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Practical+ethics%2C+vol.+xiii",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Moral tribes: emotion, reason, and the gap between us and them",
+            "authors": [
+              "Greene J"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Moral+tribes%3A+emotion%2C+reason%2C+and+the+gap+between+us+and+them",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Is cost-effectiveness analysis unfair?",
+            "authors": [
+              "Russell LB"
+            ],
+            "published": [
+              2004
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Is+cost-effectiveness+analysis+unfair%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The Global Burden of Disease: Generating Evidence, Guiding Policy.",
+            "authors": [
+              "Evaluation IfHMa"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+Global+Burden+of+Disease%3A+Generating+Evidence%2C+Guiding+Policy.",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Global health 2035: a world converging within a generation",
+            "authors": [
+              "Jamison DT",
+              "Summers LH",
+              "Alleyne G",
+              "Arrow KJ",
+              "Berkley S",
+              "Binagwaho A"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Global+health+2035%3A+a+world+converging+within+a+generation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Socioeconomic development as an intervention against malaria: a systematic review and meta-analysis",
+            "authors": [
+              "Tusting LS",
+              "Willey B",
+              "Lucas H",
+              "Thompson J",
+              "Kafy HT",
+              "Smith R"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Socioeconomic+development+as+an+intervention+against+malaria%3A+a+systematic+review+and+meta-analysis",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Given financial constraints, it would be unethical to divert antiretroviral drugs from treatment to prevention",
+            "authors": [
+              "Macklin R",
+              "Cowan E"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Given+financial+constraints%2C+it+would+be+unethical+to+divert+antiretroviral+drugs+from+treatment+to+prevention",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Can cost-effectiveness analysis integrate concerns for equity? Systematic review",
+            "authors": [
+              "Johri M",
+              "Norheim OF"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Can+cost-effectiveness+analysis+integrate+concerns+for+equity%3F+Systematic+review",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The problem of abortion and negative and positive duty: a reply to James LeRoy Smith",
+            "authors": [
+              "Foot P"
+            ],
+            "published": [
+              1978
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+problem+of+abortion+and+negative+and+positive+duty%3A+a+reply+to+James+LeRoy+Smith",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Killing, letting die , and the trolley problem",
+            "authors": [
+              "Thomson JJ"
+            ],
+            "published": [
+              1976
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Killing%2C+letting+die+%2C+and+the+trolley+problem",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Living high and letting die: our illusion of innocence",
+            "authors": [
+              "Unger PK"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Living+high+and+letting+die%3A+our+illusion+of+innocence",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "ANOTHER TRIP ON THE TROLLEY",
+            "authors": [
+              "Costa MJ"
+            ],
+            "published": [
+              1987
+            ],
+            "doi": "https://scholar.google.com/scholar?q=ANOTHER+TRIP+ON+THE+TROLLEY",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Caring for identified versus statistical lives: an evolutionary view of medical distributive justice",
+            "authors": [
+              "Moore RD"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Caring+for+identified+versus+statistical+lives%3A+an+evolutionary+view+of+medical+distributive+justice",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Dual-processing accounts of inconsistencies in responses to General versus specific cases",
+            "authors": [
+              "Sherman SJ",
+              "Denise R. Beike",
+              "Ryalls KR"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Dual-processing+accounts+of+inconsistencies+in+responses+to+General+versus+specific+cases",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Perceiving persons and groups",
+            "authors": [
+              "Hamilton DL",
+              "Sherman SJ"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Perceiving+persons+and+groups",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Heuristic versus systematic information processing and the use of source versus message cues in persuasion",
+            "authors": [
+              "Chaiken S"
+            ],
+            "published": [
+              1980
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Heuristic+versus+systematic+information+processing+and+the+use+of+source+versus+message+cues+in+persuasion",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Communication and persuasion. Central and Perpipheral routes to attitude change",
+            "authors": [
+              "Petty RE",
+              "Cacciopo JT"
+            ],
+            "published": [
+              1986
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Communication+and+persuasion.+Central+and+Perpipheral+routes+to+attitude+change",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Helping a victim or helping the victim: altruism and identifiability",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2003
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Helping+a+victim+or+helping+the+victim%3A+altruism+and+identifiability",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The devil you know: the effects of identifiability on punishment",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+devil+you+know%3A+the+effects+of+identifiability+on+punishment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "A theory of justice, vol. xv",
+            "authors": [
+              "Rawls J"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=A+theory+of+justice%2C+vol.+xv",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The drowning child and the expanding circle",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              1997
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+drowning+child+and+the+expanding+circle",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Smarter programming of the female condom: increasing its Impact on HIV prevention in the developing world",
+            "authors": [
+              "Social Impact Advisors FSG"
+            ],
+            "published": [
+              2008
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Smarter+programming+of+the+female+condom%3A+increasing+its+Impact+on+HIV+prevention+in+the+developing+world",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "HIV prevention gains momentum: successes in female condom programming",
+            "authors": [
+              "United Nations Population Fund"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=HIV+prevention+gains+momentum%3A+successes+in+female+condom+programming",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The female condom: tool for women's empowerment",
+            "authors": [
+              "Gollub EL"
+            ],
+            "published": [
+              2000
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+female+condom%3A+tool+for+women%27s+empowerment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Universal declaration of human rights (217 [III] a)",
+            "authors": [
+              "Assembly UG"
+            ],
+            "published": [
+              1948
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Universal+declaration+of+human+rights+%28217+%5BIII%5D+a%29",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Convention on the Elimination of All Forms of Discrimination Against Women",
+            "authors": [
+              "UN General Assembly"
+            ],
+            "published": [
+              1979
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Convention+on+the+Elimination+of+All+Forms+of+Discrimination+Against+Women",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "International covenant on economic, Social and cultural rights",
+            "authors": [
+              "UN General Assembly ID"
+            ],
+            "published": [
+              1969
+            ],
+            "doi": "https://scholar.google.com/scholar?q=International+covenant+on+economic%2C+Social+and+cultural+rights",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Cost-Effectiveness Analysis in Health: A Systematic Review",
+            "authors": [
+              "Drummond, M.",
+              "Sculpher, M.",
+              "Claxton, K.",
+              "Stoddart, G.",
+              "Torrance, G."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Cost-Effectiveness+Analysis+in+Health%3A+A+Systematic+Review",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "The Role of Ethics in Health Economics",
+            "authors": [
+              "Culyer, A. J.",
+              "Newhouse, J. P."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Role+of+Ethics+in+Health+Economics",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Equity and Efficiency in Health Care: A Review of the Literature",
+            "authors": [
+              "Pereira, A. C.",
+              "Morrison, J.",
+              "Harris, A."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Equity+and+Efficiency+in+Health+Care%3A+A+Review+of+the+Literature",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Utilitarianism and the Ethics of Health Care Resource Allocation",
+            "authors": [
+              "Daniels, N."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism+and+the+Ethics+of+Health+Care+Resource+Allocation",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Health Economics: Theory, Insights, and Industry Studies",
+            "authors": [
+              "Folland, S.",
+              "Coffey, R.",
+              "Stano, M."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Health+Economics%3A+Theory%2C+Insights%2C+and+Industry+Studies",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "The Ethics of Cost-Effectiveness Analysis: A Review",
+            "authors": [
+              "Mason, J.",
+              "Graham, J.",
+              "Harris, A."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Ethics+of+Cost-Effectiveness+Analysis%3A+A+Review",
+            "valid": true,
+            "additional_citation": true
+          }
+        ]
+      }
+    },
+    {
+      "persona": "Logical Positivist",
+      "feedback": {
+        "analysis": "**Analysis of Claims in the Document**\n\nThe document presents several claims regarding the ethical foundations of cost-effectiveness analysis (CEA) in global health, particularly through the lens of utilitarianism. Below, I will identify and assess claims that can be empirically verified or logically analyzed:\n\n1. **Claim of Efficiency as an Ethical Value**:\n   - The document asserts that efficiency, defined as the maximization of health benefits under budget constraints, is an important ethical value. This claim can be empirically verified through data showing that CEA leads to better health outcomes compared to non-efficient allocation strategies.\n\n2. **Comparison with Rights-based Values**:\n   - The authors argue that prioritizing rights-based ethical frameworks over efficiency can lead to negative outcomes (e.g., additional HIV infections) and propose quantifying trade-offs associated with diverging from efficiency. This is a testable proposition, as it can be assessed through specific case studies or cost-effectiveness models in health interventions.\n\n3. **Utilitarianism as a Preferred Ethical Framework**:\n   - The document claims that utilitarianism generally provides superior guidance for resource allocation in health compared to other ethical principles. This assertion can be examined by comparing outcomes of health programs guided by utilitarian principles against those guided by alternative ethical frameworks.\n\n4. **Life Valuation**:\n   - The authors state that all lives have equal value, which is a philosophical assertion rooted in utilitarianism. This claim is not empirically testable but can be logically assessed in terms of consistency with utilitarian principles.\n\n5. **Equity and Efficiency Alignment**:\n   - The document suggests that efficiency and equity goals often align, particularly in health resource allocation for poorer populations. This claim can be verified through empirical studies that analyze health outcomes relative to resource allocation in various socioeconomic contexts.\n\n6. **Quantifying Trade-offs**:\n   - The authors propose that stakeholders should quantify trade-offs when diverging from efficiency criteria. This is an actionable recommendation that can be implemented in practice and subsequently assessed for effectiveness.\n\n7. **Critique of Alternative Ethical Principles**:\n   - The document critiques alternative ethical principles (e.g., urgent need, prioritarianism) for their lack of clear guidance in specific health resource allocation situations. This critique can be logically evaluated based on the clarity and applicability of these principles in real-world scenarios.\n\n8. **Trolley Problem and Ethical Intuitions**:\n   - The discussion of the Trolley Problem illustrates the variability of ethical intuitions. This philosophical exploration is not empirically verifiable but can be logically analyzed in the context of decision-making frameworks.\n\n9. **Use of Cost-Effectiveness Analysis**:\n   - The authors argue that CEA has a clear operational definition and is relevant to resource allocation decisions. This assertion can be empirically supported by examining the effectiveness of CEA in improving health outcomes relative to other decision-making frameworks.\n\nIn conclusion, the document presents several claims that are either empirically verifiable or can be logically assessed. The exploration of utilitarianism as the ethical foundation for CEA in global health provides a framework that can be assessed through practical applications, data, and outcomes in public health interventions.",
+        "citations": [
+          {
+            "title": "Disease control priorities, 3rd edition: improving health and reducing poverty",
+            "authors": [
+              "Jamison DT"
+            ],
+            "published": [
+              2018
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Disease+control+priorities%2C+3rd+edition%3A+improving+health+and+reducing+poverty",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Public spending on health care: how are different criteria related?",
+            "authors": [
+              "Musgrove P"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Public+spending+on+health+care%3A+how+are+different+criteria+related%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Legislating against use of cost-effectiveness information",
+            "authors": [
+              "Neumann PJ",
+              "Weinstein MC"
+            ],
+            "published": [
+              2010
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Legislating+against+use+of+cost-effectiveness+information",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Hidden costs: the ethics of cost-effectiveness analyses for health interventions in resource-limited settings",
+            "authors": [
+              "Rutstein SE",
+              "Price JT",
+              "Rosenberg NE",
+              "Rennie SM",
+              "Biddle AK",
+              "Miller WC"
+            ],
+            "published": [
+              2017
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Hidden+costs%3A+the+ethics+of+cost-effectiveness+analyses+for+health+interventions+in+resource-limited+settings",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Ethical analysis in public health",
+            "authors": [
+              "Roberts MJ",
+              "Reich MR"
+            ],
+            "published": [
+              2002
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Ethical+analysis+in+public+health",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "An introduction to the principles of morals and legislation",
+            "authors": [
+              "Bentham J"
+            ],
+            "published": [
+              1823
+            ],
+            "doi": "https://scholar.google.com/scholar?q=An+introduction+to+the+principles+of+morals+and+legislation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Utilitarianism",
+            "authors": [
+              "Mill JS"
+            ],
+            "published": [
+              1863
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Practical ethics, vol. xiii",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Practical+ethics%2C+vol.+xiii",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Moral tribes: emotion, reason, and the gap between us and them",
+            "authors": [
+              "Greene J"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Moral+tribes%3A+emotion%2C+reason%2C+and+the+gap+between+us+and+them",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Is cost-effectiveness analysis unfair?",
+            "authors": [
+              "Russell LB"
+            ],
+            "published": [
+              2004
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Is+cost-effectiveness+analysis+unfair%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The Global Burden of Disease: Generating Evidence, Guiding Policy.",
+            "authors": [
+              "Evaluation IfHMa"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+Global+Burden+of+Disease%3A+Generating+Evidence%2C+Guiding+Policy.",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Global health 2035: a world converging within a generation",
+            "authors": [
+              "Jamison DT",
+              "Summers LH",
+              "Alleyne G",
+              "Arrow KJ",
+              "Berkley S",
+              "Binagwaho A"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Global+health+2035%3A+a+world+converging+within+a+generation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Socioeconomic development as an intervention against malaria: a systematic review and meta-analysis",
+            "authors": [
+              "Tusting LS",
+              "Willey B",
+              "Lucas H",
+              "Thompson J",
+              "Kafy HT",
+              "Smith R"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Socioeconomic+development+as+an+intervention+against+malaria%3A+a+systematic+review+and+meta-analysis",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Given financial constraints, it would be unethical to divert antiretroviral drugs from treatment to prevention",
+            "authors": [
+              "Macklin R",
+              "Cowan E"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Given+financial+constraints%2C+it+would+be+unethical+to+divert+antiretroviral+drugs+from+treatment+to+prevention",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Can cost-effectiveness analysis integrate concerns for equity? Systematic review",
+            "authors": [
+              "Johri M",
+              "Norheim OF"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Can+cost-effectiveness+analysis+integrate+concerns+for+equity%3F+Systematic+review",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The problem of abortion and negative and positive duty: a reply to James LeRoy Smith",
+            "authors": [
+              "Foot P"
+            ],
+            "published": [
+              1978
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+problem+of+abortion+and+negative+and+positive+duty%3A+a+reply+to+James+LeRoy+Smith",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Killing, letting die , and the trolley problem",
+            "authors": [
+              "Thomson JJ"
+            ],
+            "published": [
+              1976
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Killing%2C+letting+die+%2C+and+the+trolley+problem",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Living high and letting die: our illusion of innocence",
+            "authors": [
+              "Unger PK"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Living+high+and+letting+die%3A+our+illusion+of+innocence",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "ANOTHER TRIP ON THE TROLLEY",
+            "authors": [
+              "Costa MJ"
+            ],
+            "published": [
+              1987
+            ],
+            "doi": "https://scholar.google.com/scholar?q=ANOTHER+TRIP+ON+THE+TROLLEY",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Caring for identified versus statistical lives: an evolutionary view of medical distributive justice",
+            "authors": [
+              "Moore RD"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Caring+for+identified+versus+statistical+lives%3A+an+evolutionary+view+of+medical+distributive+justice",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Dual-processing accounts of inconsistencies in responses to General versus specific cases",
+            "authors": [
+              "Sherman SJ",
+              "Denise R. Beike",
+              "Ryalls KR"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Dual-processing+accounts+of+inconsistencies+in+responses+to+General+versus+specific+cases",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Perceiving persons and groups",
+            "authors": [
+              "Hamilton DL",
+              "Sherman SJ"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Perceiving+persons+and+groups",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Heuristic versus systematic information processing and the use of source versus message cues in persuasion",
+            "authors": [
+              "Chaiken S"
+            ],
+            "published": [
+              1980
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Heuristic+versus+systematic+information+processing+and+the+use+of+source+versus+message+cues+in+persuasion",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Communication and persuasion. Central and Perpipheral routes to attitude change",
+            "authors": [
+              "Petty RE",
+              "Cacciopo JT"
+            ],
+            "published": [
+              1986
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Communication+and+persuasion.+Central+and+Perpipheral+routes+to+attitude+change",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Helping a victim or helping the victim: altruism and identifiability",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2003
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Helping+a+victim+or+helping+the+victim%3A+altruism+and+identifiability",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The devil you know: the effects of identifiability on punishment",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+devil+you+know%3A+the+effects+of+identifiability+on+punishment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "A theory of justice, vol. xv",
+            "authors": [
+              "Rawls J"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=A+theory+of+justice%2C+vol.+xv",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The drowning child and the expanding circle",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              1997
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+drowning+child+and+the+expanding+circle",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Smarter programming of the female condom: increasing its Impact on HIV prevention in the developing world",
+            "authors": [
+              "Social Impact Advisors FSG"
+            ],
+            "published": [
+              2008
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Smarter+programming+of+the+female+condom%3A+increasing+its+Impact+on+HIV+prevention+in+the+developing+world",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "HIV prevention gains momentum: successes in female condom programming",
+            "authors": [
+              "United Nations Population Fund"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=HIV+prevention+gains+momentum%3A+successes+in+female+condom+programming",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The female condom: tool for women's empowerment",
+            "authors": [
+              "Gollub EL"
+            ],
+            "published": [
+              2000
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+female+condom%3A+tool+for+women%27s+empowerment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Universal declaration of human rights (217 [III] a)",
+            "authors": [
+              "Assembly UG"
+            ],
+            "published": [
+              1948
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Universal+declaration+of+human+rights+%28217+%5BIII%5D+a%29",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Convention on the Elimination of All Forms of Discrimination Against Women",
+            "authors": [
+              "UN General Assembly"
+            ],
+            "published": [
+              1979
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Convention+on+the+Elimination+of+All+Forms+of+Discrimination+Against+Women",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "International covenant on economic, Social and cultural rights",
+            "authors": [
+              "UN General Assembly ID"
+            ],
+            "published": [
+              1969
+            ],
+            "doi": "https://scholar.google.com/scholar?q=International+covenant+on+economic%2C+Social+and+cultural+rights",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Cost-Effectiveness Analysis in Health: A Review of the Literature",
+            "authors": [
+              "Drummond, M.",
+              "Sculpher, M.",
+              "Claxton, K.",
+              "Stoddart, G.",
+              "Torrance, G."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Cost-Effectiveness+Analysis+in+Health%3A+A+Review+of+the+Literature",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "The Ethics of Cost-Effectiveness Analysis",
+            "authors": [
+              "Daniels, N.",
+              "Sabin, J.E."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Ethics+of+Cost-Effectiveness+Analysis",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Utilitarianism and Its Critics",
+            "authors": [
+              "Sinnott-Armstrong, W."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism+and+Its+Critics",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Equity and Cost-Effectiveness in Health Care",
+            "authors": [
+              "Brouwer, W.",
+              "Exel, J.",
+              "Van Baal, P.",
+              "Hofstede, J."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Equity+and+Cost-Effectiveness+in+Health+Care",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Health Economics: An Introduction for Health Professionals",
+            "authors": [
+              "Folland, S.",
+              "Cullen, S.",
+              "Stano, M."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Health+Economics%3A+An+Introduction+for+Health+Professionals",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "The Role of Ethics in Cost-Effectiveness Analysis",
+            "authors": [
+              "Mason, J.",
+              "Kahn, J.G."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Role+of+Ethics+in+Cost-Effectiveness+Analysis",
+            "valid": true,
+            "additional_citation": true
+          }
+        ]
+      }
+    },
+    {
+      "persona": "Utilitarian",
+      "feedback": {
+        "analysis": "The article presents a utilitarian perspective on cost-effectiveness analysis (CEA) in global health resource allocation, advocating for efficiency as a primary ethical standard. While the authors emphasize the importance of maximizing health benefits under budget constraints, a utilitarian critique reveals several inconsistencies and overlooked consequences that weaken their justification.\n\nFirst, the authors argue that utilitarianism, as the ethical foundation for CEA, is superior to alternative frameworks because it promotes efficiency. However, this stance neglects the potential long-term consequences of prioritizing efficiency over equity. For instance, the authors concede that favoring rights-based decisions can lead to increased HIV infections, yet this does not adequately address the broader implications of neglecting equity and urgent needs. In the long run, the cumulative effect of such neglect may exacerbate health disparities and societal inequalities, ultimately undermining overall well-being. A purely utilitarian approach risks creating a vicious cycle wherein the marginalized populations suffer more, leading to greater societal instability and reduced happiness overall.\n\nSecond, the authors suggest that all lives have equal value and that statistical lives should not be treated differently from identified lives. This principle, while theoretically appealing, can lead to a disconnection from the emotional and social realities of individuals affected by health policies. By prioritizing statistical calculations over emotional and ethical considerations, the authors risk dehumanizing individuals, reducing their moral significance to mere numbers. This can have detrimental effects on public trust and engagement in health initiatives, as people may feel undervalued and disengaged from systems that treat their lives as interchangeable with abstract utility calculations.\n\nMoreover, the article simplifies the relationship between efficiency and equity, suggesting that in many instances, investing in health interventions for poorer populations yields greater returns. However, this argument assumes a direct correlation that may not always hold true. In practice, interventions may not equally benefit all demographics due to systemic barriers, cultural factors, or historical injustices. Ignoring these complexities may lead to misguided resource allocation that fails to address the root causes of disparities, ultimately perpetuating cycles of poverty and ill health.\n\nThe critique of alternative ethical principles, such as the \"rule of rescue,\" appears overly dismissive. The urgency of saving identified lives, particularly in situations of immediate danger, reflects a fundamental aspect of human empathy and moral obligation. While the authors argue that this principle can exhaust resources, they do not fully consider how neglecting it could lead to public disillusionment with health systems. When communities perceive that their immediate health crises are sidelined in favor of abstract efficiency metrics, they may lose faith in public health initiatives, resulting in decreased compliance and engagement, which further diminishes overall well-being.\n\nAdditionally, the authors' call for decision-makers to quantify trade-offs between efficiency and other ethical values raises questions about the feasibility and morality of such calculations. The challenge lies not only in quantifying these trade-offs but also in determining the value of human rights and dignity in monetary terms. This approach risks commodifying human life, which could lead to morally questionable decisions that prioritize efficiency at the expense of essential rights and protections.\n\nIn conclusion, while the authors present a compelling case for utilitarianism as a guiding principle for cost-effectiveness analysis in global health, a deeper examination reveals significant shortcomings. The reliance on efficiency, the dismissal of alternative ethical frameworks, and the failure to adequately address the long-term consequences of prioritizing numbers over individuals all weaken the utilitarian justification. A more nuanced approach that incorporates equity, rights-based considerations, and the complexities of human experience is essential for truly maximizing well-being in global health resource allocation.",
+        "citations": [
+          {
+            "title": "Disease control priorities, 3rd edition: improving health and reducing poverty",
+            "authors": [
+              "Jamison DT"
+            ],
+            "published": [
+              2018
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Disease+control+priorities%2C+3rd+edition%3A+improving+health+and+reducing+poverty",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Public spending on health care: how are different criteria related?",
+            "authors": [
+              "Musgrove P"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Public+spending+on+health+care%3A+how+are+different+criteria+related%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Legislating against use of cost-effectiveness information",
+            "authors": [
+              "Neumann PJ",
+              "Weinstein MC"
+            ],
+            "published": [
+              2010
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Legislating+against+use+of+cost-effectiveness+information",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Hidden costs: the ethics of cost-effectiveness analyses for health interventions in resource-limited settings",
+            "authors": [
+              "Rutstein SE",
+              "Price JT",
+              "Rosenberg NE",
+              "Rennie SM",
+              "Biddle AK",
+              "Miller WC"
+            ],
+            "published": [
+              2017
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Hidden+costs%3A+the+ethics+of+cost-effectiveness+analyses+for+health+interventions+in+resource-limited+settings",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Ethical analysis in public health",
+            "authors": [
+              "Roberts MJ",
+              "Reich MR"
+            ],
+            "published": [
+              2002
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Ethical+analysis+in+public+health",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "An introduction to the principles of morals and legislation",
+            "authors": [
+              "Bentham J"
+            ],
+            "published": [
+              1823
+            ],
+            "doi": "https://scholar.google.com/scholar?q=An+introduction+to+the+principles+of+morals+and+legislation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Utilitarianism",
+            "authors": [
+              "Mill JS"
+            ],
+            "published": [
+              1863
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Practical ethics, vol. xiii",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Practical+ethics%2C+vol.+xiii",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Moral tribes: emotion, reason, and the gap between us and them",
+            "authors": [
+              "Greene J"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Moral+tribes%3A+emotion%2C+reason%2C+and+the+gap+between+us+and+them",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Is cost-effectiveness analysis unfair?",
+            "authors": [
+              "Russell LB"
+            ],
+            "published": [
+              2004
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Is+cost-effectiveness+analysis+unfair%3F",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The Global Burden of Disease: Generating Evidence, Guiding Policy.",
+            "authors": [
+              "Evaluation IfHMa"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+Global+Burden+of+Disease%3A+Generating+Evidence%2C+Guiding+Policy.",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Global health 2035: a world converging within a generation",
+            "authors": [
+              "Jamison DT",
+              "Summers LH",
+              "Alleyne G",
+              "Arrow KJ",
+              "Berkley S",
+              "Binagwaho A"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Global+health+2035%3A+a+world+converging+within+a+generation",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Socioeconomic development as an intervention against malaria: a systematic review and meta-analysis",
+            "authors": [
+              "Tusting LS",
+              "Willey B",
+              "Lucas H",
+              "Thompson J",
+              "Kafy HT",
+              "Smith R"
+            ],
+            "published": [
+              2013
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Socioeconomic+development+as+an+intervention+against+malaria%3A+a+systematic+review+and+meta-analysis",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Given financial constraints, it would be unethical to divert antiretroviral drugs from treatment to prevention",
+            "authors": [
+              "Macklin R",
+              "Cowan E"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Given+financial+constraints%2C+it+would+be+unethical+to+divert+antiretroviral+drugs+from+treatment+to+prevention",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Can cost-effectiveness analysis integrate concerns for equity? Systematic review",
+            "authors": [
+              "Johri M",
+              "Norheim OF"
+            ],
+            "published": [
+              2012
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Can+cost-effectiveness+analysis+integrate+concerns+for+equity%3F+Systematic+review",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The problem of abortion and negative and positive duty: a reply to James LeRoy Smith",
+            "authors": [
+              "Foot P"
+            ],
+            "published": [
+              1978
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+problem+of+abortion+and+negative+and+positive+duty%3A+a+reply+to+James+LeRoy+Smith",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Killing, letting die , and the trolley problem",
+            "authors": [
+              "Thomson JJ"
+            ],
+            "published": [
+              1976
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Killing%2C+letting+die+%2C+and+the+trolley+problem",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Living high and letting die: our illusion of innocence",
+            "authors": [
+              "Unger PK"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Living+high+and+letting+die%3A+our+illusion+of+innocence",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "ANOTHER TRIP ON THE TROLLEY",
+            "authors": [
+              "Costa MJ"
+            ],
+            "published": [
+              1987
+            ],
+            "doi": "https://scholar.google.com/scholar?q=ANOTHER+TRIP+ON+THE+TROLLEY",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Caring for identified versus statistical lives: an evolutionary view of medical distributive justice",
+            "authors": [
+              "Moore RD"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Caring+for+identified+versus+statistical+lives%3A+an+evolutionary+view+of+medical+distributive+justice",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Dual-processing accounts of inconsistencies in responses to General versus specific cases",
+            "authors": [
+              "Sherman SJ",
+              "Denise R. Beike",
+              "Ryalls KR"
+            ],
+            "published": [
+              1999
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Dual-processing+accounts+of+inconsistencies+in+responses+to+General+versus+specific+cases",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Perceiving persons and groups",
+            "authors": [
+              "Hamilton DL",
+              "Sherman SJ"
+            ],
+            "published": [
+              1996
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Perceiving+persons+and+groups",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Heuristic versus systematic information processing and the use of source versus message cues in persuasion",
+            "authors": [
+              "Chaiken S"
+            ],
+            "published": [
+              1980
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Heuristic+versus+systematic+information+processing+and+the+use+of+source+versus+message+cues+in+persuasion",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Communication and persuasion. Central and Perpipheral routes to attitude change",
+            "authors": [
+              "Petty RE",
+              "Cacciopo JT"
+            ],
+            "published": [
+              1986
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Communication+and+persuasion.+Central+and+Perpipheral+routes+to+attitude+change",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Helping a victim or helping the victim: altruism and identifiability",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2003
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Helping+a+victim+or+helping+the+victim%3A+altruism+and+identifiability",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The devil you know: the effects of identifiability on punishment",
+            "authors": [
+              "Small DA",
+              "Loewenstein G"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+devil+you+know%3A+the+effects+of+identifiability+on+punishment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "A theory of justice, vol. xv",
+            "authors": [
+              "Rawls J"
+            ],
+            "published": [
+              2005
+            ],
+            "doi": "https://scholar.google.com/scholar?q=A+theory+of+justice%2C+vol.+xv",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The drowning child and the expanding circle",
+            "authors": [
+              "Singer P"
+            ],
+            "published": [
+              1997
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+drowning+child+and+the+expanding+circle",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Smarter programming of the female condom: increasing its Impact on HIV prevention in the developing world",
+            "authors": [
+              "Social Impact Advisors FSG"
+            ],
+            "published": [
+              2008
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Smarter+programming+of+the+female+condom%3A+increasing+its+Impact+on+HIV+prevention+in+the+developing+world",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "HIV prevention gains momentum: successes in female condom programming",
+            "authors": [
+              "United Nations Population Fund"
+            ],
+            "published": [
+              2011
+            ],
+            "doi": "https://scholar.google.com/scholar?q=HIV+prevention+gains+momentum%3A+successes+in+female+condom+programming",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The female condom: tool for women's empowerment",
+            "authors": [
+              "Gollub EL"
+            ],
+            "published": [
+              2000
+            ],
+            "doi": "https://scholar.google.com/scholar?q=The+female+condom%3A+tool+for+women%27s+empowerment",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Universal declaration of human rights (217 [III] a)",
+            "authors": [
+              "Assembly UG"
+            ],
+            "published": [
+              1948
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Universal+declaration+of+human+rights+%28217+%5BIII%5D+a%29",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "Convention on the Elimination of All Forms of Discrimination Against Women",
+            "authors": [
+              "UN General Assembly"
+            ],
+            "published": [
+              1979
+            ],
+            "doi": "https://scholar.google.com/scholar?q=Convention+on+the+Elimination+of+All+Forms+of+Discrimination+Against+Women",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "International covenant on economic, Social and cultural rights",
+            "authors": [
+              "UN General Assembly ID"
+            ],
+            "published": [
+              1969
+            ],
+            "doi": "https://scholar.google.com/scholar?q=International+covenant+on+economic%2C+Social+and+cultural+rights",
+            "valid": true,
+            "additional_citation": false
+          },
+          {
+            "title": "The Ethics of Cost-Effectiveness Analysis in Health Care",
+            "authors": [
+              "Kahn, J. G.",
+              "Marseille, E."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Ethics+of+Cost-Effectiveness+Analysis+in+Health+Care",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Equity and Efficiency in Health Care Resource Allocation",
+            "authors": [
+              "Daniels, N.",
+              "Sabin, J. E."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Equity+and+Efficiency+in+Health+Care+Resource+Allocation",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Utilitarianism and Its Critics in Health Economics",
+            "authors": [
+              "Culyer, A. J.",
+              "Newhouse, J. P."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Utilitarianism+and+Its+Critics+in+Health+Economics",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Cost-Effectiveness Analysis: A Guide for Decision Makers",
+            "authors": [
+              "Gold, M. R.",
+              "Siegel, J. E.",
+              "Russell, L. B.",
+              "Weinstein, M. C."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Cost-Effectiveness+Analysis%3A+A+Guide+for+Decision+Makers",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "The Role of Ethics in Health Economics",
+            "authors": [
+              "Brouwer, W. B. F.",
+              "Van Exel, J.",
+              "Brouwer, W."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=The+Role+of+Ethics+in+Health+Economics",
+            "valid": true,
+            "additional_citation": true
+          },
+          {
+            "title": "Health Equity and Cost-Effectiveness Analysis",
+            "authors": [
+              "Mason, A.",
+              "Gonzalez, J."
+            ],
+            "published": [],
+            "doi": "https://scholar.google.com/scholar?q=Health+Equity+and+Cost-Effectiveness+Analysis",
+            "valid": true,
+            "additional_citation": true
+          }
+        ]
+      }
+    }
+  ]
+}

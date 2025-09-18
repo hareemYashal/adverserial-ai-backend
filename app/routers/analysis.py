@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import logging
 from app.database import get_db
 from app.services.analysis_service import analysis_service
 from app.models.document import Document
 from app.services.auth_service import get_current_user  # assuming you have JWT auth
 from app.schemas.citation import CitationsResponse
 from app.schemas import CitationVerificationRequest, CitationVerificationResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/analyze", tags=["Analysis"])
 
@@ -39,6 +42,8 @@ def analyze_document(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    logger.info(f" [START] Single analysis for persona: {persona_name}")
+    
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -46,14 +51,18 @@ def analyze_document(
         raise HTTPException(status_code=400, detail="Document has no extracted content")
 
     try:
+        logger.info(" [STEP 1] Starting single persona analysis...")
         # This already includes verified citations in the feedback
         result = analysis_service.analyze(document.content, persona_name)
+        
+        logger.info(f" [COMPLETE] Single analysis finished. Total API calls: 3 (1 extraction + 1 additional + 1 persona)")
         # Return the result directly - it already contains the properly structured citations
         return {
             "persona": persona_name,
             "feedback": result
         }
     except Exception as e:
+        logger.error(f" [FATAL ERROR] Single analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/extract-references", response_model=CitationsResponse)
