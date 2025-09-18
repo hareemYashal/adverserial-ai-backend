@@ -196,14 +196,16 @@ class AnalysisService:
         llm_output = response.choices[0].message.content
         logger.info(f" [API CALL 3/3] {persona_name} analysis - SUCCESS")
 
-        # Extract references section and parse with LLM
-        logger.info(" [STEP 2] Extracting references section...")
-        references_text = self._get_references_section(document_text)
-        citations_json = self.extract_citations_llm(references_text)
+        # Use multi_analysis_service for citation extraction
+        from app.services.multi_analysis_service import multi_analysis_service
+        
+        logger.info("📝 [STEP 2] Extracting references section...")
+        references_text = multi_analysis_service._get_references_section(document_text)
+        citations_json = multi_analysis_service.extract_citations_llm(references_text)
         
         # Verify citations
-        logger.info(" [STEP 3] Verifying citations...")
-        verified_citations = self.verify_citations_llm(
+        logger.info("📝 [STEP 3] Verifying citations...")
+        verified_citations = multi_analysis_service.verify_citations_llm(
             citations_json.get("citations", []), 
             document_text
         )
@@ -255,7 +257,7 @@ OUTPUT FORMAT EXAMPLE:
 TEXT:
 <<<REFERENCES_TEXT>>>
 """
-        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:15000])
+        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:50000])
         try:
             logger.info(" [API CALL 1/3] OpenAI - Extracting citations from document")
             response = self.client.chat.completions.create(
@@ -264,8 +266,8 @@ TEXT:
                     {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.0,
-                max_tokens=3000,
+                temperature=0.1,
+                max_tokens=4000,
             )
             logger.info(" [API CALL 1/3] Citation extraction - SUCCESS")
             text_out = response.choices[0].message.content.strip()
@@ -292,10 +294,17 @@ TEXT:
             return {"citations": []}
 
     def _get_references_section(self, text: str) -> str:
-        match = re.search(r'(?i)\bReferences\b', text)
-        if match:
-            return text[match.end():].strip()
-        return text
+        # Try multiple reference section patterns
+        patterns = [r'(?i)\bReferences\b', r'(?i)\bBibliography\b', r'(?i)\bWorks Cited\b', r'(?i)\bLiterature Cited\b']
+        
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return text[match.end():].strip()
+        
+        # If no references section found, return last 30% of document
+        split_point = int(len(text) * 0.7)
+        return text[split_point:].strip()
 
 # Singleton
 analysis_service = AnalysisService()

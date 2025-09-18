@@ -50,7 +50,7 @@ class Multi_AnalysisService:
         """
         Process citations and generate Google Scholar links - NO API calls.
         """
-        logger.info(f" [CITATIONS] Processing {len(references)} citations - NO API calls")
+        logger.info(f"🔗 [CITATIONS] Processing {len(references)} citations - NO API calls")
         verified_refs = []
 
         # Process all existing references
@@ -86,7 +86,7 @@ class Multi_AnalysisService:
 
         # Get additional citations (if requested) and add them at the end
         if paper_content:
-            logger.info(" [ADDITIONAL] Getting additional citations...")
+            logger.info("📚 [ADDITIONAL] Getting additional citations...")
             additional_citations = self._get_additional_citations(paper_content)
             # Build set of normalized titles from main citations
             main_titles = set(self._normalize_title(ref["title"]) for ref in verified_refs if ref.get("title"))
@@ -126,7 +126,7 @@ class Multi_AnalysisService:
         )
 
         try:
-            logger.info(" [API CALL 2/5] OpenAI - Getting additional citations")
+            logger.info("🤖 [API CALL 2/5] OpenAI - Getting additional citations")
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -136,7 +136,7 @@ class Multi_AnalysisService:
                 temperature=0.0,
                 max_tokens=600,
             )
-            logger.info(" [API CALL 2/5] Additional citations - SUCCESS")
+            logger.info("✅ [API CALL 2/5] Additional citations - SUCCESS")
             text_out = response.choices[0].message.content.strip()
             
             suggested = self.safe_parse_json(text_out)
@@ -160,7 +160,7 @@ class Multi_AnalysisService:
                     "additional_citation": True
                 }
                 verified_suggestions.append(verified)
-            logger.info(f" [ADDITIONAL] Generated {len(verified_suggestions)} additional citations")
+            logger.info(f"✅ [ADDITIONAL] Generated {len(verified_suggestions)} additional citations")
             return verified_suggestions
             
         except Exception as e:
@@ -194,7 +194,7 @@ class Multi_AnalysisService:
         system_prompt = persona["system_prompt"]
 
         # Persona-based LLM analysis
-        logger.info(f" [API CALL] OpenAI - Analyzing with {persona_name} persona")
+        logger.info(f"🎭 [API CALL] OpenAI - Analyzing with {persona_name} persona")
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -204,7 +204,7 @@ class Multi_AnalysisService:
             temperature=0.7
         )
         llm_output = response.choices[0].message.content
-        logger.info(f" [API CALL] {persona_name} analysis - SUCCESS")
+        logger.info(f"✅ [API CALL] {persona_name} analysis - SUCCESS")
 
         return {
             "persona": persona_name,
@@ -215,10 +215,21 @@ class Multi_AnalysisService:
         }
 
     def _get_references_section(self, text: str) -> str:
-        match = re.search(r'(?i)\bReferences\b', text)
-        if match:
-            return text[match.end():].strip()
-        return text
+        # Try multiple reference section patterns
+        patterns = [r'(?i)\bReferences\b', r'(?i)\bBibliography\b', r'(?i)\bWorks Cited\b', r'(?i)\bLiterature Cited\b']
+        
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                refs_section = text[match.end():].strip()
+                logger.info(f"📝 [DEBUG] Found References section: {len(refs_section)} characters")
+                return refs_section
+        
+        # If no references section found, return last 30% of document
+        split_point = int(len(text) * 0.7)
+        refs_section = text[split_point:].strip()
+        logger.info(f"⚠️ [DEBUG] No References section found, using last 30% of document: {len(refs_section)} characters")
+        return refs_section
 
     def extract_citations_llm(self, references_text: str) -> dict:
         """
@@ -264,19 +275,20 @@ OUTPUT FORMAT EXAMPLE:
 TEXT:
 <<<REFERENCES_TEXT>>>
 """
-        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:150000])
+        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:50000])
+        logger.info(f"📝 [DEBUG] References text length: {len(references_text)} chars, using first 50000")
         try:
-            logger.info(" [API CALL 1/5] OpenAI - Extracting citations from document")
+            logger.info("🤖 [API CALL 1/5] OpenAI - Extracting citations from document")
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.0,
-                max_tokens=3000,
+                temperature=0.1,
+                max_tokens=4000,
             )
-            logger.info(" [API CALL 1/5] Citation extraction - SUCCESS")
+            logger.info("✅ [API CALL 1/5] Citation extraction - SUCCESS")
             text_out = response.choices[0].message.content.strip()
             
             def safe_parse_json(maybe_json: str):
@@ -294,7 +306,9 @@ TEXT:
             
             parsed = safe_parse_json(text_out)
             citations_count = len(parsed.get("citations", []))
-            logger.info(f" [CITATIONS] Extracted {citations_count} citations from document")
+            logger.info(f"✅ [CITATIONS] Extracted {citations_count} citations from document")
+            if citations_count <= 2:
+                logger.info(f"⚠️ [DEBUG] Low citation count. LLM response: {text_out[:200]}...")
             return parsed
         except Exception as e:
             print(f"[Citation Extraction Error] {e}")
