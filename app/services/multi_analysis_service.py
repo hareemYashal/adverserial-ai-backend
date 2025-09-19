@@ -105,7 +105,7 @@ class Multi_AnalysisService:
     def _get_additional_citations(self, paper_content: str) -> list:
         """Get additional relevant citations based on paper content"""
         prompt = (
-            "You are a precise academic librarian with access to Google Scholar database. Based on the paper content below, suggest 3-4 REAL academic references that definitely exist on Google Scholar.\n\n"
+            "You are a precise academic librarian with access to Google Scholar database. Based on the paper content below, suggest 6-7 REAL academic references that definitely exist on Google Scholar.\n\n"
             "ABSOLUTE REQUIREMENTS:\n"
             "1. ONLY suggest papers that you are 100% certain exist on Google Scholar\n"
             "2. Use EXACT titles as they appear in the actual publications - no modifications\n"
