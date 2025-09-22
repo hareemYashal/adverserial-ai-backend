@@ -2,7 +2,7 @@ import os
 import re
 import json
 import logging
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 from urllib.parse import quote_plus
