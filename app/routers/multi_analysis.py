@@ -44,8 +44,18 @@ async def multi_analyze_document(
 
         # Run persona analysis in parallel with shared citations
         logger.info(f" [STEP 4] Running {len(persona_names)} persona analyses in parallel...")
+        
+        async def analyze_with_new_session(content, persona_name, verified_citations):
+            # Create new DB session for each task
+            from app.database import SessionLocal
+            new_db = SessionLocal()
+            try:
+                return await multi_analysis_service.analyze(content, persona_name, new_db, verified_citations)
+            finally:
+                new_db.close()
+        
         tasks = [
-            multi_analysis_service.analyze(document.content, persona_name, db, verified_citations)
+            analyze_with_new_session(document.content, persona_name, verified_citations)
             for persona_name in persona_names
         ]
         feedbacks = await asyncio.gather(*tasks, return_exceptions=True)

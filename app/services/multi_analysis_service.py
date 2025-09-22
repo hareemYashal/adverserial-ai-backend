@@ -195,7 +195,7 @@ class Multi_AnalysisService:
 
         # Persona-based LLM analysis
         logger.info(f"🎭 [API CALL] OpenAI - Analyzing with {persona_name} persona")
-        response = self.client.chat.completions.create(
+        response = await self.async_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},

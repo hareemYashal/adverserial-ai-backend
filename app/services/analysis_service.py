@@ -2,7 +2,7 @@ import os
 import re
 import json
 import logging
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 from urllib.parse import quote_plus
@@ -14,6 +14,7 @@ class AnalysisService:
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY)
         self.client = OpenAI(api_key=api_key)
+        self.async_client = AsyncOpenAI(api_key=api_key)
 
     def _normalize_title(self, title: str) -> str:
         """Normalize a title for deduplication: lowercase, remove punctuation and extra spaces."""
