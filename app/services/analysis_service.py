@@ -14,6 +14,8 @@ class AnalysisService:
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY)
         self.client = OpenAI(api_key=api_key)
+        from openai import AsyncOpenAI
+        self.async_client = AsyncOpenAI(api_key=api_key)
 
     def _normalize_title(self, title: str) -> str:
         """Normalize a title for deduplication: lowercase, remove punctuation and extra spaces."""
@@ -176,6 +178,45 @@ class AnalysisService:
                     pass
         return []
 
+    async def analyze_async(self, document_text: str, persona_name: str) -> dict:
+        logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
+        persona = persona_service.get_by_name(persona_name)
+        if not persona:
+            raise ValueError(f"Persona '{persona_name}' not found")
+
+        system_prompt = persona["system_prompt"]
+
+        # Async persona-based LLM analysis
+        response = await self.async_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": document_text}
+            ],
+            temperature=0.7
+        )
+        llm_output = response.choices[0].message.content
+        logger.info(f" [API CALL 3/3] {persona_name} analysis - SUCCESS")
+
+        # Use multi_analysis_service for citation extraction
+        from app.services.multi_analysis_service import multi_analysis_service
+        
+        logger.info("📝 [STEP 2] Extracting references section...")
+        references_text = multi_analysis_service._get_references_section(document_text)
+        citations_json = await multi_analysis_service.extract_citations_llm_async(references_text)
+        
+        # Verify citations
+        logger.info("📝 [STEP 3] Verifying citations...")
+        verified_citations = multi_analysis_service.verify_citations_llm(
+            citations_json.get("citations", []), 
+            document_text
+        )
+
+        return {
+            "analysis": llm_output,
+            "citations": verified_citations
+        }
+
     def analyze(self, document_text: str, persona_name: str) -> dict:
         logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
         persona = persona_service.get_by_name(persona_name)
@@ -214,6 +255,84 @@ class AnalysisService:
             "analysis": llm_output,
             "citations": verified_citations
         }
+
+    async def extract_citations_llm_async(self, references_text: str) -> dict:
+        """Async version of citation extraction."""
+        PROMPT = """
+You are a meticulous, rule-following bibliographic parser. 
+Your job is ONLY to parse the REFERENCES/BIBLIOGRAPHY text provided and return a strict JSON object — nothing else.
+
+Extract every bibliographic reference and return ONLY valid JSON. 
+The JSON must be a single object with key "citations", whose value is a list of citation objects in the same order they appear.
+
+Each citation object MUST contain exactly these fields in this order:
+1. "title" (string) — title of the work (include subtitles only).
+2. "authors" (array of strings) — list of authors exactly as in the reference (e.g., ["Smith, J.", "Doe, A."]). Remove roles like (Eds.), (Trans.).
+3. "published" (array) — a single-element array with the year as integer, e.g. [1998].
+4. "id" (integer) — a running index starting at 1.
+5. "doi" — always null at extraction stage.
+6. "valid" (boolean) — always false at extraction stage.
+
+Rules: 
+- RETURN ONLY JSON. No commentary, no extra text, no markdown fences. 
+- DO NOT invent data. Extract only from provided text. 
+- Identify reference boundaries by "Author(s), YEAR". Capture wrapped lines until the next author-year or end of block. 
+- For published date: take the first 4-digit year inside parentheses after authors.
+- For title: extract the sentence immediately after the year period. Stop before publisher/journal info. 
+- Exclude DOIs, URLs, page numbers, publisher, and editors from the title.
+
+OUTPUT FORMAT EXAMPLE:
+{
+    "citations": [
+        {
+            "title": "Lenin and philosophy and other essays",
+            "authors": ["Althusser, L."],
+            "published": [1971],
+            "id": 1,
+            "doi": null,
+            "valid": false
+        }
+    ]
+}
+
+TEXT:
+<<<REFERENCES_TEXT>>>
+"""
+        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:50000])
+        try:
+            logger.info(" [API CALL 1/3] OpenAI - Extracting citations from document")
+            response = await self.async_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                max_tokens=4000,
+            )
+            logger.info(" [API CALL 1/3] Citation extraction - SUCCESS")
+            text_out = response.choices[0].message.content.strip()
+            
+            def safe_parse_json(maybe_json: str):
+                maybe_json = maybe_json.strip()
+                try:
+                    return json.loads(maybe_json)
+                except Exception:
+                    m = re.search(r"(\{(?:.|\n)*\})", maybe_json)
+                    if m:
+                        try:
+                            return json.loads(m.group(1))
+                        except Exception:
+                            pass
+                raise ValueError("Could not parse JSON from model output")
+            
+            parsed = safe_parse_json(text_out)
+            citations_count = len(parsed.get("citations", []))
+            logger.info(f" [CITATIONS] Extracted {citations_count} citations from document")
+            return parsed
+        except Exception as e:
+            print(f"[Citation Extraction Error] {e}")
+            return {"citations": []}
 
     def extract_citations_llm(self, references_text: str) -> dict:
         """Extracts references section and parses citations into strict JSON."""

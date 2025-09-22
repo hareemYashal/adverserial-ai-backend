@@ -35,7 +35,7 @@ class ExtractRequest(BaseModel):
     document_id: Optional[int] = None
     text: Optional[str] = None
 @router.post("/")
-def analyze_document(
+async def analyze_document(
     project_id: int,
     document_id: int,
     persona_name: str,
@@ -53,7 +53,7 @@ def analyze_document(
     try:
         logger.info(" [STEP 1] Starting single persona analysis...")
         # This already includes verified citations in the feedback
-        result = analysis_service.analyze(document.content, persona_name)
+        result = await analysis_service.analyze_async(document.content, persona_name)
         
         logger.info(f" [COMPLETE] Single analysis finished. Total API calls: 3 (1 extraction + 1 additional + 1 persona)")
         # Return the result directly - it already contains the properly structured citations

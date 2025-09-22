@@ -36,11 +36,11 @@ async def multi_analyze_document(
         references_text = multi_analysis_service._get_references_section(document.content)
         
         logger.info(" [STEP 2] Extracting citations...")
-        citations_result = multi_analysis_service.extract_citations_llm(references_text)
+        citations_result = await multi_analysis_service.extract_citations_llm_async(references_text)
         citations = citations_result.get("citations", []) if citations_result else []
         
         logger.info(" [STEP 3] Verifying citations and generating Google Scholar links...")
-        verified_citations = multi_analysis_service.verify_citations_llm(citations, document.content)
+        verified_citations = await multi_analysis_service.verify_citations_llm_async(citations, document.content)
 
         # Run persona analysis in parallel with shared citations
         logger.info(f" [STEP 4] Running {len(persona_names)} persona analyses in parallel...")
