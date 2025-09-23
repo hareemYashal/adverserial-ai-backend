@@ -20,15 +20,18 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-def process_document_text(document_id: int, db: Session):
+async def process_document_text(document_id: int, db: Session):
     """Background task to extract text from uploaded document."""
     try:
         document = db.query(Document).filter(Document.id == document_id).first()
         if not document or not document.file_path:
             return
         
-        # Extract text content
-        extracted_text = file_service.extract_text(document.file_path, document.file_type)
+        # Extract text content asynchronously
+        import asyncio
+        extracted_text = await asyncio.to_thread(
+            file_service.extract_text, document.file_path, document.file_type
+        )
         
         # Update document with extracted text
         document.content = extracted_text

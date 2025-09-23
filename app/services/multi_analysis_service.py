@@ -46,6 +46,60 @@ class Multi_AnalysisService:
         query = ' '.join(query_parts)
         return f"https://scholar.google.com/scholar?q={quote_plus(query)}"
 
+    async def verify_citations_llm_async(self, references: list, paper_content: str = None) -> list:
+        """Async version of citation verification"""
+        logger.info(f"🔗 [CITATIONS] Processing {len(references)} citations - NO API calls")
+        verified_refs = []
+
+        # Process all existing references
+        for ref in references:
+            if isinstance(ref, dict):  # structured ref
+                title = ref.get("title", "").strip()
+                authors = ref.get("authors", [])
+                year = None
+                if isinstance(ref.get("published"), list) and ref["published"]:
+                    year = ref["published"][0]
+                elif isinstance(ref.get("published"), int):
+                    year = ref.get("published")
+            else:  # fallback if ref is a string
+                title = str(ref).strip()
+                authors = []
+                year = None
+
+            if not title:
+                continue
+
+            # Generate Google Scholar link (no API call)
+            gs_link = self._get_google_scholar_link_enhanced(title, authors, year)
+            verified_ref = {
+                "title": title,
+                "authors": authors,
+                "published": [year] if year else [],
+                "doi": gs_link,
+                "valid": True,
+                "additional_citation": False
+            }
+
+            verified_refs.append(verified_ref)
+
+        # Get additional citations (if requested) and add them at the end
+        if paper_content:
+            logger.info("📚 [ADDITIONAL] Getting additional citations...")
+            additional_citations = await self._get_additional_citations_async(paper_content)
+            # Build set of normalized titles from main citations
+            main_titles = set(self._normalize_title(ref["title"]) for ref in verified_refs if ref.get("title"))
+            seen_additional = set()
+            for citation in additional_citations:
+                norm_title = self._normalize_title(citation.get("title", ""))
+                # Skip if already in main citations or already added as additional
+                if not norm_title or norm_title in main_titles or norm_title in seen_additional:
+                    continue
+                citation["additional_citation"] = True
+                verified_refs.append(citation)
+                seen_additional.add(norm_title)
+
+        return verified_refs
+
     def verify_citations_llm(self, references: list, paper_content: str = None) -> list:
         """
         Process citations and generate Google Scholar links - NO API calls.
@@ -101,6 +155,71 @@ class Multi_AnalysisService:
                 seen_additional.add(norm_title)
 
         return verified_refs
+
+    async def _get_additional_citations_async(self, paper_content: str) -> list:
+        """Async version of getting additional citations"""
+        prompt = (
+            "You are a precise academic librarian with access to Google Scholar database. Based on the paper content below, suggest 6-7 REAL academic references that definitely exist on Google Scholar.\n\n"
+            "ABSOLUTE REQUIREMENTS:\n"
+            "1. ONLY suggest papers that you are 100% certain exist on Google Scholar\n"
+            "2. Use EXACT titles as they appear in the actual publications - no modifications\n"
+            "3. Use EXACT author names as they appear in Google Scholar\n"
+            "4. Use EXACT publication years from the actual papers\n"
+            "5. Focus on highly-cited, well-known papers in the field\n"
+            "6. If you are not 100% sure about a title/author/year combination, DO NOT include it\n\n"
+            f"Paper Content:\n{paper_content[:2000]}\n\n"
+            "EXAMPLES of papers that definitely exist:\n"
+            "- Health Economics: 'Methods for the Economic Evaluation of Health Care Programmes' by Drummond et al.\n"
+            "- Medical Ethics: 'Principles of Biomedical Ethics' by Beauchamp & Childress\n"
+            "- Philosophy: 'A Theory of Justice' by John Rawls\n\n"
+            "Return ONLY a JSON array with EXACT information:\n"
+            "[\n"
+            '  {"title": "EXACT Title as Published", "authors": ["Exact, A.B.", "Name, C.D."], "published": [EXACT_YEAR]}\n'
+            "]\n\n"
+            "WARNING: If you suggest a fake citation, it will be detected. Only suggest papers you are absolutely certain exist."
+        )
+
+        try:
+            logger.info("🤖 [API CALL 2/5] OpenAI - Getting additional citations")
+            response = await self.async_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a precise academic librarian. Return only valid JSON with REAL citations."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+                max_tokens=600,
+            )
+            logger.info("✅ [API CALL 2/5] Additional citations - SUCCESS")
+            text_out = response.choices[0].message.content.strip()
+            
+            suggested = self.safe_parse_json(text_out)
+            verified_suggestions = []
+            for sug in suggested:
+                title = sug.get("title", "").strip()
+                authors = sug.get("authors", [])
+                year = None
+                if isinstance(sug.get("published"), list) and sug["published"]:
+                    year = sug["published"][0]
+                if not title:
+                    continue
+                # Generate Google Scholar link (no API call)
+                gs_link = self._get_google_scholar_link_enhanced(title, authors, year)
+                verified = {
+                    "title": title,
+                    "authors": authors,
+                    "published": [year] if year else [],
+                    "doi": gs_link,
+                    "valid": True,
+                    "additional_citation": True
+                }
+                verified_suggestions.append(verified)
+            logger.info(f"✅ [ADDITIONAL] Generated {len(verified_suggestions)} additional citations")
+            return verified_suggestions
+            
+        except Exception as e:
+            print(f"[Additional Citations Error] {e}")
+            return []
 
     def _get_additional_citations(self, paper_content: str) -> list:
         """Get additional relevant citations based on paper content"""
@@ -193,9 +312,9 @@ class Multi_AnalysisService:
 
         system_prompt = persona["system_prompt"]
 
-        # Persona-based LLM analysis
+        # Async persona-based LLM analysis
         logger.info(f"🎭 [API CALL] OpenAI - Analyzing with {persona_name} persona")
-        response = self.client.chat.completions.create(
+        response = await self.async_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -230,6 +349,87 @@ class Multi_AnalysisService:
         refs_section = text[split_point:].strip()
         logger.info(f"⚠️ [DEBUG] No References section found, using last 30% of document: {len(refs_section)} characters")
         return refs_section
+
+    async def extract_citations_llm_async(self, references_text: str) -> dict:
+        """Async version of citation extraction."""
+        PROMPT = """
+You are a meticulous, rule-following bibliographic parser. 
+Your job is ONLY to parse the REFERENCES/BIBLIOGRAPHY text provided and return a strict JSON object — nothing else.
+
+Extract every bibliographic reference and return ONLY valid JSON. 
+The JSON must be a single object with key "citations", whose value is a list of citation objects in the same order they appear.
+
+Each citation object MUST contain exactly these fields in this order:
+1. "title" (string) — title of the work (include subtitles only).
+2. "authors" (array of strings) — list of authors exactly as in the reference (e.g., ["Smith, J.", "Doe, A."]). Remove roles like (Eds.), (Trans.).
+3. "published" (array) — a single-element array with the year as integer, e.g. [1998].
+4. "id" (integer) — a running index starting at 1.
+5. "doi" — always null at extraction stage.
+6. "valid" (boolean) — always false at extraction stage.
+
+Rules: 
+- RETURN ONLY JSON. No commentary, no extra text, no markdown fences. 
+- DO NOT invent data. Extract only from provided text. 
+- Identify reference boundaries by "Author(s), YEAR". Capture wrapped lines until the next author-year or end of block. 
+- For published date: take the first 4-digit year inside parentheses after authors.
+- For title: extract the sentence immediately after the year period. Stop before publisher/journal info. 
+- Exclude DOIs, URLs, page numbers, publisher, and editors from the title.
+
+OUTPUT FORMAT EXAMPLE:
+{
+    "citations": [
+        {
+            "title": "Lenin and philosophy and other essays",
+            "authors": ["Althusser, L."],
+            "published": [1971],
+            "id": 1,
+            "doi": null,
+            "valid": false
+        }
+    ]
+}
+
+TEXT:
+<<<REFERENCES_TEXT>>>
+"""
+        prompt = PROMPT.replace("<<<REFERENCES_TEXT>>>", references_text[:50000])
+        logger.info(f"📝 [DEBUG] References text length: {len(references_text)} chars, using first 50000")
+        try:
+            logger.info("🤖 [API CALL 1/5] OpenAI - Extracting citations from document")
+            response = await self.async_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a JSON-only extractor for bibliographic references."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                max_tokens=4000,
+            )
+            logger.info("✅ [API CALL 1/5] Citation extraction - SUCCESS")
+            text_out = response.choices[0].message.content.strip()
+            
+            def safe_parse_json(maybe_json: str):
+                maybe_json = maybe_json.strip()
+                try:
+                    return json.loads(maybe_json)
+                except Exception:
+                    m = re.search(r"(\{(?:.|\n)*\})", maybe_json)
+                    if m:
+                        try:
+                            return json.loads(m.group(1))
+                        except Exception:
+                            pass
+                raise ValueError("Could not parse JSON from model output")
+            
+            parsed = safe_parse_json(text_out)
+            citations_count = len(parsed.get("citations", []))
+            logger.info(f"✅ [CITATIONS] Extracted {citations_count} citations from document")
+            if citations_count <= 2:
+                logger.info(f"⚠️ [DEBUG] Low citation count. LLM response: {text_out[:200]}...")
+            return parsed
+        except Exception as e:
+            print(f"[Citation Extraction Error] {e}")
+            return {"citations": []}
 
     def extract_citations_llm(self, references_text: str) -> dict:
         """
