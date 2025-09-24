@@ -23,7 +23,7 @@ async def chat_simple(
     persona_prompt: str = Form(None),
     session_id: str = Form(None),
     files: List[UploadFile] = File([]),
-    document_id: int = Form(None),  # For follow-up questions
+    document_ids: str = Form(None),  # Comma-separated document IDs for follow-up questions
     db: Session = Depends(get_db)
 ):
     if not question or not question.strip():
@@ -101,13 +101,23 @@ async def chat_simple(
         )
         context = "\n\n".join(docs)
     
-    # If no files but document_id provided (follow-up questions)
-    elif document_id:
-        # Get existing document
-        document = db.query(Document).filter(Document.id == document_id).first()
-        if not document:
-            raise HTTPException(status_code=404, detail="Document not found")
-        sid = session_id or document.session_id
+    # If no files but document_ids provided (follow-up questions)
+    elif document_ids:
+        # Parse comma-separated document IDs
+        try:
+            doc_id_list = [int(x.strip()) for x in document_ids.split(',') if x.strip()]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid document_ids format. Use comma-separated integers like: 60,61,62")
+        
+        if not doc_id_list:
+            raise HTTPException(status_code=400, detail="No valid document IDs provided")
+        
+        # Get first document to extract session_id
+        first_doc = db.query(Document).filter(Document.id == doc_id_list[0]).first()
+        if not first_doc:
+            raise HTTPException(status_code=404, detail=f"Document {doc_id_list[0]} not found")
+        
+        sid = session_id or first_doc.session_id
         
         # Get context from session (all documents in session)
         docs, metadatas, distances, chunk_ids = similarity_search(
@@ -117,8 +127,8 @@ async def chat_simple(
         )
         context = "\n\n".join(docs)
     
-    # If neither files nor document_id provided
-    elif not files and not document_id:
+    # If neither files nor document_ids provided
+    elif not files and not document_ids:
         sid = session_id or str(uuid.uuid4())
         context = ""  # No document context
 
