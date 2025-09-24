@@ -1,15 +1,29 @@
 from app.models.persona import Persona
+from app.models import Document
 from sqlalchemy import func
 
 # Module-level dictionary to track persona usage per session
 persona_usage = {}
-from fastapi import APIRouter, Form, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Form, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.session import get_history, append_history
 from app.services.llm import synthesize_answer_openai
-from typing import List
+from typing import List, Optional, Union, Any
 import uuid
+
+async def parse_files(request: Request) -> List[UploadFile]:
+    """Custom function to handle files that can be empty strings from Swagger UI"""
+    form = await request.form()
+    files_data = form.getlist('files')
+    
+    valid_files = []
+    for file_item in files_data:
+        # Only add if it's actually an UploadFile with a filename
+        if hasattr(file_item, 'filename') and file_item.filename:
+            valid_files.append(file_item)
+    
+    return valid_files
 
 router = APIRouter(prefix="/api/persona-chat", tags=["Chat"])
 
@@ -22,7 +36,7 @@ async def chat_simple(
     persona_traits: str = Form(None),  # comma-separated traits
     persona_prompt: str = Form(None),
     session_id: str = Form(None),
-    files: List[UploadFile] = File(default=None),
+    files: List[UploadFile] = Depends(parse_files),
     document_ids: str = Form(None),  # Comma-separated document IDs for follow-up questions
     db: Session = Depends(get_db)
 ):
@@ -41,57 +55,58 @@ async def chat_simple(
     context = ""
 
     # Process multiple files if uploaded
-    if files and len(files) > 0 and files[0].filename:
+    if files and len(files) > 0:
         for file in files:
-            if file.filename:  # Skip empty uploads
-                # 1. Save file to disk & metadata to DB
-                file_meta = await file_service.save_file(file, project_id=project_id)
-                file_path = file_meta["file_path"]
-                file_type = file_meta["file_type"]
-                unique_filename = file_meta["unique_filename"]
+            if not file.filename:  # Skip empty uploads
+                continue
+            
+            # 1. Save file to disk & metadata to DB
+            file_meta = await file_service.save_file(file, project_id=project_id)
+            file_path = file_meta["file_path"]
+            file_type = file_meta["file_type"]
+            unique_filename = file_meta["unique_filename"]
 
-                # 2. Extract text
-                try:
-                    text = file_service.extract_text(file_path=file_path, file_type=file_type)
-                except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Text extraction failed for {file.filename}: {e}")
+            # 2. Extract text
+            try:
+                text = file_service.extract_text(file_path=file_path, file_type=file_type)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Text extraction failed for {file.filename}: {e}")
 
-                # 3. Get file size
-                try:
-                    file_size = os.path.getsize(file_path)
-                except Exception:
-                    file_size = 0
+            # 3. Get file size
+            try:
+                file_size = os.path.getsize(file_path)
+            except Exception:
+                file_size = 0
 
-                # 4. Create Document record in DB
-                from app.models import Document
-                document = Document(
-                    filename=file.filename,
-                    unique_filename=unique_filename,
-                    content=text,
-                    file_path=file_path,
-                    file_type=file_type,
-                    file_size=file_size,
-                    project_id=project_id,
-                    session_id=sid,
-                    is_processed=True,
-                    processed_at=datetime.utcnow()
-                )
-                db.add(document)
-                db.commit()
-                db.refresh(document)
-                doc_ids.append(document.id)
+            # 4. Create Document record in DB
+            document = Document(
+                filename=file.filename,
+                unique_filename=unique_filename,
+                content=text,
+                file_path=file_path,
+                file_type=file_type,
+                file_size=file_size,
+                project_id=project_id,
+                session_id=sid,
+                is_processed=True,
+                processed_at=datetime.utcnow()
+            )
+            db.add(document)
+            db.commit()
+            db.refresh(document)
+            doc_ids.append(document.id)
 
-                # 5. Chunk text and add to vector DB
-                chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
-                ids = [str(uuid.uuid4()) for _ in chunks]
-                metas = [
-                    {
-                        "document_id": document.id,
-                        "session_id": sid
-                    }
-                    for i in range(len(chunks))
-                ]
-                add_chunks(chunks, metas, ids)
+            # 5. Chunk text and add to vector DB
+            chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+            ids = [str(uuid.uuid4()) for _ in chunks]
+            metas = [
+                {
+                    "document_id": document.id,
+                    "session_id": sid
+                }
+                for i in range(len(chunks))
+            ]
+            add_chunks(chunks, metas, ids)
 
         # 6. Get context from ALL files in this session
         docs, metadatas, distances, chunk_ids = similarity_search(
@@ -128,7 +143,7 @@ async def chat_simple(
         context = "\n\n".join(docs)
     
     # If neither files nor document_ids provided
-    elif (not files or not any(f.filename for f in files if f)) and not document_ids:
+    elif (not files or len(files) == 0) and not document_ids:
         sid = session_id or str(uuid.uuid4())
         context = ""  # No document context
 
