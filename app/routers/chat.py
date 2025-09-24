@@ -23,6 +23,7 @@ async def chat_simple(
     persona_prompt: str = Form(None),
     session_id: str = Form(None),
     files: List[UploadFile] = File([]),
+    document_id: int = Form(None),  # For follow-up questions
     db: Session = Depends(get_db)
 ):
     if not question or not question.strip():
@@ -99,6 +100,27 @@ async def chat_simple(
            filters={"session_id": sid}
         )
         context = "\n\n".join(docs)
+    
+    # If no files but document_id provided (follow-up questions)
+    elif document_id:
+        # Get existing document
+        document = db.query(Document).filter(Document.id == document_id).first()
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        sid = session_id or document.session_id
+        
+        # Get context from session (all documents in session)
+        docs, metadatas, distances, chunk_ids = similarity_search(
+           query=question,
+           top_k=10,
+           filters={"session_id": sid}
+        )
+        context = "\n\n".join(docs)
+    
+    # If neither files nor document_id provided
+    elif not files and not document_id:
+        sid = session_id or str(uuid.uuid4())
+        context = ""  # No document context
 
     # Track persona usage per session
     usage_key = (sid, persona.lower())
