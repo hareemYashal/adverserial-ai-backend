@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List
 
 # Base Persona schema
 class PersonaBase(BaseModel):
     name: str
     description: Optional[str] = None
-    personality_traits: Optional[Dict[str, Any]] = None
+    personality_traits: Optional[Union[Dict[str, Any], List[str]]] = None
     system_prompt: Optional[str] = None
 
 # Schema for creating a persona
@@ -17,7 +17,7 @@ class PersonaCreate(PersonaBase):
 class PersonaUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    personality_traits: Optional[Dict[str, Any]] = None
+    personality_traits: Optional[Union[Dict[str, Any], List[str]]] = None
     system_prompt: Optional[str] = None
     is_active: Optional[bool] = None
 
