@@ -22,7 +22,7 @@ async def chat_simple(
     persona_traits: str = Form(None),  # comma-separated traits
     persona_prompt: str = Form(None),
     session_id: str = Form(None),
-    files: List[UploadFile] = File([]),
+    files: List[UploadFile] = File(default=None),
     document_ids: str = Form(None),  # Comma-separated document IDs for follow-up questions
     db: Session = Depends(get_db)
 ):
@@ -41,7 +41,7 @@ async def chat_simple(
     context = ""
 
     # Process multiple files if uploaded
-    if files:
+    if files and len(files) > 0 and files[0].filename:
         for file in files:
             if file.filename:  # Skip empty uploads
                 # 1. Save file to disk & metadata to DB
@@ -128,7 +128,7 @@ async def chat_simple(
         context = "\n\n".join(docs)
     
     # If neither files nor document_ids provided
-    elif not files and not document_ids:
+    elif (not files or not any(f.filename for f in files if f)) and not document_ids:
         sid = session_id or str(uuid.uuid4())
         context = ""  # No document context
 
