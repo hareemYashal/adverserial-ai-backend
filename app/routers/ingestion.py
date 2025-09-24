@@ -46,53 +46,54 @@ async def chat_with_document(
         for file in files:
             if not file.filename:  # Skip empty uploads
                 continue
-                # 1. Save file to disk & metadata to DB
-                file_meta = await file_service.save_file(file, project_id=project_id)
-                file_path = file_meta["file_path"]
-                file_type = file_meta["file_type"]
-                unique_filename = file_meta["unique_filename"]
+            
+            # 1. Save file to disk & metadata to DB
+            file_meta = await file_service.save_file(file, project_id=project_id)
+            file_path = file_meta["file_path"]
+            file_type = file_meta["file_type"]
+            unique_filename = file_meta["unique_filename"]
 
-                # 2. Extract text
-                try:
-                    text = file_service.extract_text(file_path=file_path, file_type=file_type)
-                except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Text extraction failed for {file.filename}: {e}")
+            # 2. Extract text
+            try:
+                text = file_service.extract_text(file_path=file_path, file_type=file_type)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Text extraction failed for {file.filename}: {e}")
 
-                # 3. Get file size from saved file on disk
-                try:
-                    file_size = os.path.getsize(file_path)
-                except Exception:
-                    file_size = 0
+            # 3. Get file size from saved file on disk
+            try:
+                file_size = os.path.getsize(file_path)
+            except Exception:
+                file_size = 0
 
-                # 4. Create Document record in DB
-                document = Document(
-                    filename=file.filename,
-                    unique_filename=unique_filename,
-                    content=text,
-                    file_path=file_path,
-                    file_type=file_type,
-                    file_size=file_size,
-                    project_id=project_id,
-                    session_id=sid,
-                    is_processed=True,
-                    processed_at=datetime.utcnow()
-                )
-                db.add(document)
-                db.commit()
-                db.refresh(document)
-                doc_ids.append(document.id)
+            # 4. Create Document record in DB
+            document = Document(
+                filename=file.filename,
+                unique_filename=unique_filename,
+                content=text,
+                file_path=file_path,
+                file_type=file_type,
+                file_size=file_size,
+                project_id=project_id,
+                session_id=sid,
+                is_processed=True,
+                processed_at=datetime.utcnow()
+            )
+            db.add(document)
+            db.commit()
+            db.refresh(document)
+            doc_ids.append(document.id)
 
-                # 5. Chunk text and add to vector DB
-                chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
-                ids = [str(uuid.uuid4()) for _ in chunks]
-                metas = [
-                    {
-                        "document_id": document.id,
-                        "session_id": sid
-                    }
-                    for i in range(len(chunks))
-                ]
-                add_chunks(chunks, metas, ids)
+            # 5. Chunk text and add to vector DB
+            chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+            ids = [str(uuid.uuid4()) for _ in chunks]
+            metas = [
+                {
+                    "document_id": document.id,
+                    "session_id": sid
+                }
+                for i in range(len(chunks))
+            ]
+            add_chunks(chunks, metas, ids)
 
     # If no files but document_id provided (follow-up questions)
     elif document_id:
