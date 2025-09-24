@@ -7,6 +7,7 @@ from app.services.chunking import chunk_text
 from app.services.retrieval import add_chunks, similarity_search
 from app.services.session import get_history, append_history
 from app.services.persona_services import persona_service
+from typing import List
 
 import uuid
 import os
@@ -19,73 +20,76 @@ async def chat_with_document(
     project_id: int = Form(...),
     question: str = Form(...),
     persona: str = Form(...),
-    file: UploadFile = File(None),  # now optional
+    files: List[UploadFile] = File([]),  # Multiple files support
     document_id: int = Form(None),  # optional for follow-ups
     session_id: str = Form(None),  # optional for follow-ups
     db: Session = Depends(get_db)
 ):
-    # If file uploaded => new document upload + process
-    if file:
-        # 1. Save file to disk & metadata to DB
-        file_meta = await file_service.save_file(file, project_id=project_id)
-        file_path = file_meta["file_path"]
-        file_type = file_meta["file_type"]
-        unique_filename = file_meta["unique_filename"]
+    sid = session_id or str(uuid.uuid4())
+    doc_ids = []
+    
+    # Process multiple files if uploaded
+    if files:
+        for file in files:
+            if file.filename:  # Skip empty uploads
+                # 1. Save file to disk & metadata to DB
+                file_meta = await file_service.save_file(file, project_id=project_id)
+                file_path = file_meta["file_path"]
+                file_type = file_meta["file_type"]
+                unique_filename = file_meta["unique_filename"]
 
-        # 2. Extract text
-        try:
-            text = file_service.extract_text(file_path=file_path, file_type=file_type)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Text extraction failed: {e}")
+                # 2. Extract text
+                try:
+                    text = file_service.extract_text(file_path=file_path, file_type=file_type)
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Text extraction failed for {file.filename}: {e}")
 
-        # 3. Get file size from saved file on disk
-        try:
-            file_size = os.path.getsize(file_path)
-        except Exception:
-            file_size = 0
+                # 3. Get file size from saved file on disk
+                try:
+                    file_size = os.path.getsize(file_path)
+                except Exception:
+                    file_size = 0
 
-        # 4. Create Document record in DB
-        document = Document(
-            filename=file.filename,
-            unique_filename=unique_filename,
-            content=text,
-            file_path=file_path,
-            file_type=file_type,
-            file_size=file_size,
-            project_id=project_id,
-            session_id=session_id or str(uuid.uuid4()),
-            is_processed=True,
-            processed_at=datetime.utcnow()
-        )
-        db.add(document)
-        db.commit()
-        db.refresh(document)
+                # 4. Create Document record in DB
+                document = Document(
+                    filename=file.filename,
+                    unique_filename=unique_filename,
+                    content=text,
+                    file_path=file_path,
+                    file_type=file_type,
+                    file_size=file_size,
+                    project_id=project_id,
+                    session_id=sid,
+                    is_processed=True,
+                    processed_at=datetime.utcnow()
+                )
+                db.add(document)
+                db.commit()
+                db.refresh(document)
+                doc_ids.append(document.id)
 
-        # 5. Chunk text and add to vector DB
-        chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
-        ids = [str(uuid.uuid4()) for _ in chunks]
-        metas = [
-            {
-                "document_id": document.id,
-                "persona":persona
-            }
-            for i in range(len(chunks))
-        ]
-        add_chunks(chunks, metas, ids)
+                # 5. Chunk text and add to vector DB
+                chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+                ids = [str(uuid.uuid4()) for _ in chunks]
+                metas = [
+                    {
+                        "document_id": document.id,
+                        "session_id": sid
+                    }
+                    for i in range(len(chunks))
+                ]
+                add_chunks(chunks, metas, ids)
 
-        sid = document.session_id
-        doc_id = document.id
-
-    # If no file, use existing document_id and session_id
-    else:
-        if not document_id:
-            raise HTTPException(status_code=400, detail="No file uploaded and no document_id provided")
+    # If no files uploaded, use existing document_id and session_id
+    elif document_id:
         # Fetch document from DB
         document = db.query(Document).filter(Document.id == document_id).first()
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         sid = session_id or document.session_id
-        doc_id = document.id
+        doc_ids = [document.id]
+    elif not files and not document_id:
+        raise HTTPException(status_code=400, detail="Either files or document_id must be provided")
 
     # 6. Get persona system prompt for LLM
     persona_obj = persona_service.get_by_name(persona, db)
@@ -94,11 +98,11 @@ async def chat_with_document(
 
     system_prompt = persona_obj.get("system_prompt", "")
 
-    # 7. Retrieve similar docs for question context from chunks related to document
-    docs, metadatas, distances, doc_ids = similarity_search(
+    # 7. Retrieve similar docs for question context from chunks related to session
+    docs, metadatas, distances, chunk_ids = similarity_search(
        query=question,
-       top_k=5,
-       filters={"document_id": doc_id}  # Filters by current doc only
+       top_k=10,  # More chunks for multiple files
+       filters={"session_id": sid}  # All docs in session
     )
     context = "\n\n".join(docs)
 
@@ -123,7 +127,7 @@ async def chat_with_document(
         "answer": answer,
         "sources": [
             {
-                "id": doc_ids[i],
+                "id": chunk_ids[i],
                 "text": docs[i],
                 "metadata": metadatas[i],
                 "score": distances[i]
@@ -131,7 +135,8 @@ async def chat_with_document(
             for i in range(len(docs))
         ],
         "session_id": sid,
-        "document_id": doc_id,
+        "document_ids": doc_ids,
+        "files_processed": len(doc_ids),
         "used_llm": bool(answer),
         "persona": persona_obj
     }
