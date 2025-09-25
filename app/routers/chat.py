@@ -190,9 +190,8 @@ async def chat_simple(
             f"CRITICAL ANALYSIS RULES:\n"
             f"1. Be critical and analytical, not overly positive or agreeable\n"
             f"2. ONLY analyze what is explicitly written in the document\n"
-            f"3. If sections are incomplete or missing, clearly state 'This section appears incomplete' or 'No content provided for this topic'\n"
-            f"4. DO NOT fill in gaps or assume what the author intended to write\n"
-            f"5. Provide specific quotes and references from the actual document content"
+            f"3. DO NOT fill in gaps or assume what the author intended to write\n"
+            f"4. Provide specific quotes and references from the actual document content"
         )
 
     history = get_history(sid)
