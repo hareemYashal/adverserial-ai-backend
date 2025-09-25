@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.session import get_history, append_history
 from app.services.llm import synthesize_answer_openai
+from app.services.auth_service import get_current_user
+from app.models.user import User
 from typing import List, Optional, Union, Any
 import uuid
 
@@ -38,7 +40,8 @@ async def chat_simple(
     session_id: str = Form(None),
     files: List[UploadFile] = Depends(parse_files),
     document_ids: str = Form(None),  # Comma-separated document IDs for follow-up questions
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     if not question or not question.strip():
         raise HTTPException(status_code=400, detail="Question is required")
@@ -160,13 +163,15 @@ async def chat_simple(
             # Use custom fields if provided
             description = persona_description or f"User-generated persona: {persona}"
             traits = persona_traits.split(',') if persona_traits else []
-            prompt = persona_prompt or f"You are now impersonating {persona}. Adopt the communication style, personality traits, and reasoning approach of {persona}. Always stay in character and respond as if you are {persona}."
+            prompt = persona_prompt or f"You are now impersonating {persona}. Adopt the communication style, personality traits, and reasoning approach of {persona}. Always stay in character and respond as if you are {persona}. CRITICAL ANALYSIS RULES: 1. Be critical and analytical, not overly positive  2. ONLY analyze what is explicitly written 3. If sections are incomplete, clearly state so 6. DO NOT fill in gaps or assume content 5. Provide specific quotes from actual document content"
             
             new_persona = Persona(
                 name=persona,
                 description=description,
                 personality_traits=traits,
-                system_prompt=prompt
+                system_prompt=prompt,
+                user_id=current_user.id,  # Associate with current user
+                is_default=False
             )
             db.add(new_persona)
             db.commit()
@@ -181,7 +186,13 @@ async def chat_simple(
         system_prompt = (
             f"You are now impersonating {persona}. "
             f"Adopt the communication style, personality traits, and reasoning approach of {persona}. "
-            f"Always stay in character and respond as if you are {persona}."
+            f"Always stay in character and respond as if you are {persona}. "
+            f"CRITICAL ANALYSIS RULES:\n"
+            f"1. Be critical and analytical, not overly positive or agreeable\n"
+            f"2. ONLY analyze what is explicitly written in the document\n"
+            f"3. If sections are incomplete or missing, clearly state 'This section appears incomplete' or 'No content provided for this topic'\n"
+            f"4. DO NOT fill in gaps or assume what the author intended to write\n"
+            f"5. Provide specific quotes and references from the actual document content"
         )
 
     history = get_history(sid)
