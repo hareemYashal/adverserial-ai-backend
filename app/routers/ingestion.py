@@ -7,6 +7,9 @@ from app.services.chunking import chunk_text
 from app.services.retrieval import add_chunks, similarity_search
 from app.services.session import get_history, append_history
 from app.services.persona_services import persona_service
+from app.services.auth_service import get_current_user
+from app.models.user import User
+from sqlalchemy import func
 from typing import List
 
 import uuid
@@ -36,7 +39,8 @@ async def chat_with_document(
     files: List[UploadFile] = Depends(parse_files),  # Handle empty files
     document_id: str = Form(None),  # Comma-separated document IDs
     session_id: str = Form(None),  # optional for follow-ups
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     sid = session_id or str(uuid.uuid4())
     doc_ids = []
@@ -119,20 +123,38 @@ async def chat_with_document(
         sid = session_id or str(uuid.uuid4())
         doc_ids = []
 
-    # 6. Get persona system prompt for LLM
+    # 6. Get persona system prompt for LLM - load from database first
     persona_obj = persona_service.get_by_name(persona, db)
     if not persona_obj:
         raise HTTPException(status_code=400, detail=f"Persona '{persona}' not found")
 
     system_prompt = persona_obj.get("system_prompt", "")
+    # Add instructions to answer what is asked
+    system_prompt += "\n\nCRITICAL INSTRUCTION: Read the user's question carefully. If they ask about YOU personally (like 'What did you eat?', 'What is your name?', 'How are you?'), answer from YOUR persona's perspective and ignore any document content. Only analyze or reference the document if explicitly asked to do so (like 'analyze this document', 'what does the document say?'). Always prioritize answering the actual question asked."
 
-    # 7. Retrieve similar docs for question context from chunks related to session
-    docs, metadatas, distances, chunk_ids = similarity_search(
-       query=question,
-       top_k=10,  # More chunks for multiple files
-       filters={"session_id": sid}  # All docs in session
-    )
-    context = "\n\n".join(docs)
+    # 7. Retrieve document context
+    context = ""
+    docs, metadatas, distances, chunk_ids = [], [], [], []
+    
+    if doc_ids:
+        # Get document content directly from database
+        doc = db.query(Document).filter(Document.id == doc_ids[0]).first()
+        if doc and doc.content:
+            context = doc.content[:3000]  # Use first 3000 characters
+            print(f"Using direct document content: {len(context)} characters")
+    
+    # If no direct content, try vector search
+    if not context:
+        try:
+            docs, metadatas, distances, chunk_ids = similarity_search(
+               query=question,
+               top_k=10,
+               filters={"session_id": sid}
+            )
+            context = "\n\n".join(docs)
+        except Exception as e:
+            print(f"Vector search failed: {e}")
+            context = ""
 
     # 8. Get chat history for session
     history = get_history(sid)
@@ -140,12 +162,22 @@ async def chat_with_document(
     # 9. Call LLM with custom system prompt instead of default
     from app.services.llm import synthesize_answer_openai
 
+    # Check if it's a personal question to modify context
+    personal_keywords = ['what did you', 'who are you', 'your name', 'how are you', 'tell me about yourself', 'what do you']
+    is_personal = any(keyword in question.lower() for keyword in personal_keywords)
+    
+    final_context = "No document context provided. Respond as your persona." if is_personal else (context if context else "No document context provided. Respond based on your persona's perspective.")
+    
     answer = synthesize_answer_openai(
         question=question,
-        context=context,
+        context=final_context,
         history=history,
         system_prompt=system_prompt,
     )
+    
+    # Ensure we have a valid answer
+    if not answer or answer.strip() == "":
+        answer = f"I am {persona} and I'm ready to help you. Please ask me a question and I'll respond from my philosophical perspective."
 
     # 10. Save user Q & assistant A in history
     append_history(sid, "user", question)

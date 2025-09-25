@@ -3,6 +3,7 @@ import re
 import json
 import logging
 from openai import OpenAI, AsyncOpenAI
+from sqlalchemy.orm import Session
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 from urllib.parse import quote_plus
@@ -178,13 +179,20 @@ class AnalysisService:
                     pass
         return []
 
-    async def analyze_async(self, document_text: str, persona_name: str) -> dict:
+    async def analyze_async(self, document_text: str, persona_name: str, db: Session = None) -> dict:
         logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
-        persona = persona_service.get_by_name(persona_name)
+        persona = persona_service.get_by_name(persona_name, db)
         if not persona:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
+        # Add critical analysis rules to persona prompt
+        system_prompt += "\n\nCRITICAL ANALYSIS RULES:\n" + \
+                        "1. Be critical and analytical, not overly positive or agreeable\n" + \
+                        "2. ONLY analyze what is explicitly written in the document\n" + \
+                        "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
+                        "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
+                        "5. Provide specific quotes and references from the actual document content"
 
         # Async persona-based LLM analysis
         response = await self.async_client.chat.completions.create(
@@ -217,13 +225,20 @@ class AnalysisService:
             "citations": verified_citations
         }
 
-    def analyze(self, document_text: str, persona_name: str) -> dict:
+    def analyze(self, document_text: str, persona_name: str, db: Session = None) -> dict:
         logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
-        persona = persona_service.get_by_name(persona_name)
+        persona = persona_service.get_by_name(persona_name, db)
         if not persona:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
+        # Add critical analysis rules to persona prompt
+        system_prompt += "\n\nCRITICAL ANALYSIS RULES:\n" + \
+                        "1. Be critical and analytical, not overly positive or agreeable\n" + \
+                        "2. ONLY analyze what is explicitly written in the document\n" + \
+                        "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
+                        "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
+                        "5. Provide specific quotes and references from the actual document content"
 
         # Persona-based LLM analysis
         response = self.client.chat.completions.create(

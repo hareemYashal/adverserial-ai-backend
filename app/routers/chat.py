@@ -179,20 +179,33 @@ async def chat_simple(
         # Optionally, remove the usage key to avoid repeated inserts
         del persona_usage[usage_key]
 
-    # Build system prompt - use custom if provided, otherwise default
+    # Build system prompt - try to load from database first
     if persona_prompt:
         system_prompt = persona_prompt
     else:
-        system_prompt = (
-            f"You are now impersonating {persona}. "
-            f"Adopt the communication style, personality traits, and reasoning approach of {persona}. "
-            f"Always stay in character and respond as if you are {persona}. "
-            f"CRITICAL ANALYSIS RULES:\n"
-            f"1. Be critical and analytical, not overly positive or agreeable\n"
-            f"2. ONLY analyze what is explicitly written in the document\n"
-            f"3. DO NOT fill in gaps or assume what the author intended to write\n"
-            f"4. Provide specific quotes and references from the actual document content"
-        )
+        # Try to load persona from database
+        db_persona = db.query(Persona).filter(func.lower(Persona.name) == persona.lower()).first()
+        if db_persona and db_persona.system_prompt:
+            # Add critical analysis rules to database persona prompt
+            system_prompt = db_persona.system_prompt + "\n\nCRITICAL ANALYSIS RULES:\n" + \
+                           "1. Be critical and analytical, not overly positive or agreeable\n" + \
+                           "2. ONLY analyze what is explicitly written in the document\n" + \
+                           "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
+                           "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
+                           "5. Provide specific quotes and references from the actual document content"
+        else:
+            # Fallback to generic prompt
+            system_prompt = (
+                f"You are now impersonating {persona}. "
+                f"Adopt the communication style, personality traits, and reasoning approach of {persona}. "
+                f"Always stay in character and respond as if you are {persona}. "
+                f"CRITICAL ANALYSIS RULES:\n"
+                f"1. Be critical and analytical, not overly positive or agreeable\n"
+                f"2. ONLY analyze what is explicitly written in the document\n"
+                f"3. If sections are incomplete, clearly state 'This section appears incomplete'\n"
+                f"4. DO NOT fill in gaps or assume what the author intended to write\n"
+                f"5. Provide specific quotes and references from the actual document content"
+            )
 
     history = get_history(sid)
 
@@ -200,12 +213,16 @@ async def chat_simple(
         # Call the LLM with persona prompt and (optionally) document context
         answer = synthesize_answer_openai(
             question=question,
-            context=context,
+            context=context if context else "No document context provided. Respond based on your persona's perspective.",
             history=history,
             system_prompt=system_prompt
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM call failed: {str(e)}")
+    
+    # Ensure we have a valid answer
+    if not answer or answer.strip() == "":
+        answer = f"I am {persona} and I'm ready to help you. Please ask me a question and I'll respond from my philosophical perspective."
 
     append_history(sid, "user", question)
     append_history(sid, "assistant", answer or "No answer available.")
