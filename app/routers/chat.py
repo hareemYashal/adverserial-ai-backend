@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.session import get_history, append_history
 from app.services.llm import synthesize_answer_openai
+from app.services.auth_service import get_current_user
+from app.models.user import User
 from typing import List, Optional, Union, Any
 import uuid
 
@@ -38,7 +40,8 @@ async def chat_simple(
     session_id: str = Form(None),
     files: List[UploadFile] = Depends(parse_files),
     document_ids: str = Form(None),  # Comma-separated document IDs for follow-up questions
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     if not question or not question.strip():
         raise HTTPException(status_code=400, detail="Question is required")
@@ -166,7 +169,9 @@ async def chat_simple(
                 name=persona,
                 description=description,
                 personality_traits=traits,
-                system_prompt=prompt
+                system_prompt=prompt,
+                user_id=current_user.id,  # Associate with current user
+                is_default=False
             )
             db.add(new_persona)
             db.commit()

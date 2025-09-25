@@ -24,6 +24,8 @@ class PersonaUpdate(BaseModel):
 # Schema for persona response
 class PersonaResponse(PersonaBase):
     id: int
+    user_id: Optional[int] = None
+    is_default: bool = False
     is_active: bool
     created_at: datetime
     updated_at: datetime

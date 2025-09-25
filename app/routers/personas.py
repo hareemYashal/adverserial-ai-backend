@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
 from app.models.persona import Persona
+from app.models.user import User
 from app.schemas.persona import PersonaResponse, PersonaCreate, PersonaUpdate
+from app.services.auth_service import get_current_user
 
 router = APIRouter(
     prefix="/personas",
@@ -34,41 +36,36 @@ async def create_persona(
     db.refresh(new_persona)
     return new_persona
 
-@router.get("/", response_model=List[PersonaResponse], summary="Get all personas")
-async def get_personas(
+@router.get("/", response_model=List[PersonaResponse], summary="Get user personas")
+async def get_user_personas(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Retrieve all personas with optional filtering.
+    Retrieve user's personas + default personas.
     
     - **skip**: Number of personas to skip (for pagination)
     - **limit**: Maximum number of personas to return
     - **active_only**: Filter to only active personas (optional)
     """
-    query = db.query(Persona)
+    # Get default personas (is_default=True) + user's own personas
+    query = db.query(Persona).filter(
+        or_(
+            Persona.is_default == True,  # Default personas (visible to all)
+            Persona.user_id == current_user.id  # User's own personas
+        )
+    )
+    
     if active_only:
         query = query.filter(Persona.is_active == True)
     
     personas = query.offset(skip).limit(limit).all()
     return personas
 
-@router.get("/active", response_model=List[PersonaResponse], summary="Get active personas")
-async def get_active_personas(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db)
-):
-    """
-    Retrieve all active personas.
-    
-    - **skip**: Number of personas to skip (for pagination)
-    - **limit**: Maximum number of personas to return
-    """
-    personas = db.query(Persona).filter(Persona.is_active == True).offset(skip).limit(limit).all()
-    return personas
+
 
 @router.get("/{persona_id}", response_model=PersonaResponse, summary="Get persona by ID")
 async def get_persona(persona_id: int, db: Session = Depends(get_db)):
@@ -183,18 +180,32 @@ async def update_persona(
     db.refresh(db_persona)
     return db_persona
 
-@router.delete("/{persona_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete persona")
-async def delete_persona(persona_id: int, db: Session = Depends(get_db)):
+@router.delete("/{persona_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user persona")
+async def delete_user_persona(
+    persona_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
-    Delete a persona.
+    Delete a user's persona (cannot delete default personas).
     
     - **persona_id**: The ID of the persona to delete
     """
-    db_persona = db.query(Persona).filter(Persona.id == persona_id).first()
+    db_persona = db.query(Persona).filter(
+        Persona.id == persona_id,
+        Persona.user_id == current_user.id  # Only user's own personas
+    ).first()
+    
     if db_persona is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Persona with ID {persona_id} not found"
+            detail=f"Persona with ID {persona_id} not found or not owned by user"
+        )
+    
+    if db_persona.is_default:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete default personas"
         )
     
     db.delete(db_persona)
