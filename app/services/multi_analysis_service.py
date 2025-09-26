@@ -311,6 +311,15 @@ class Multi_AnalysisService:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
+        # Add adversarial analysis rules
+        system_prompt += "\n\nADVERSARIAL MODE:\n" + \
+                        "1. You are the user's intellectual opponent - challenge their arguments.\n" + \
+                        "2. Systematically test the document's claims and reasoning.\n" + \
+                        "3. Be critically rigorous - identify flaws and weaknesses directly.\n" + \
+                        "4. Quote exact text when making critiques and points.\n" + \
+                        "5. Attack logical fallacies and poor evidence systematically.\n" + \
+                        "6. Your goal: Test arguments through adversarial analysis.\n" + \
+                        "7. Avoid hallucinations - reference only actual document content."
 
         # Async persona-based LLM analysis
         logger.info(f"🎭 [API CALL] OpenAI - Analyzing with {persona_name} persona")

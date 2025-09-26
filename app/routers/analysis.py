@@ -52,8 +52,8 @@ async def analyze_document(
 
     try:
         logger.info(" [STEP 1] Starting single persona analysis...")
-        # This already includes verified citations in the feedback
-        result = await analysis_service.analyze_async(document.content, persona_name)
+        # Pass db session to analysis service
+        result = await analysis_service.analyze_async(document.content, persona_name, db)
         
         logger.info(f" [COMPLETE] Single analysis finished. Total API calls: 3 (1 extraction + 1 additional + 1 persona)")
         # Return the result directly - it already contains the properly structured citations

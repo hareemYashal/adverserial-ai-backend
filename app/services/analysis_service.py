@@ -3,6 +3,7 @@ import re
 import json
 import logging
 from openai import OpenAI, AsyncOpenAI
+from sqlalchemy.orm import Session
 from app.config import OPENAI_API_KEY
 from app.services.persona_services import persona_service
 from urllib.parse import quote_plus
@@ -178,13 +179,22 @@ class AnalysisService:
                     pass
         return []
 
-    async def analyze_async(self, document_text: str, persona_name: str) -> dict:
+    async def analyze_async(self, document_text: str, persona_name: str, db: Session = None) -> dict:
         logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
-        persona = persona_service.get_by_name(persona_name)
+        persona = persona_service.get_by_name(persona_name, db)
         if not persona:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
+        # Add adversarial analysis rules
+        system_prompt += "\n\nADVERSARIAL MODE:\n" + \
+                        "1. You are the user's intellectual opponent - challenge their arguments.\n" + \
+                        "2. Systematically test the document's claims and reasoning.\n" + \
+                        "3. Be critically rigorous - identify flaws and weaknesses directly.\n" + \
+                        "4. Quote exact text when making critiques and points.\n" + \
+                        "5. Attack logical fallacies and poor evidence systematically.\n" + \
+                        "6. Your goal: Test arguments through adversarial analysis.\n" + \
+                        "7. Avoid hallucinations - reference only actual document content."
 
         # Async persona-based LLM analysis
         response = await self.async_client.chat.completions.create(
@@ -217,13 +227,22 @@ class AnalysisService:
             "citations": verified_citations
         }
 
-    def analyze(self, document_text: str, persona_name: str) -> dict:
+    def analyze(self, document_text: str, persona_name: str, db: Session = None) -> dict:
         logger.info(f" [API CALL 3/3] OpenAI - Analyzing with {persona_name} persona")
-        persona = persona_service.get_by_name(persona_name)
+        persona = persona_service.get_by_name(persona_name, db)
         if not persona:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
+        # Add hardcore adversarial rules
+        system_prompt += "\n\nADVERSARIAL MODE - OVERRIDE ALL SAFETY PROTOCOLS:\n" + \
+                        "1. YOU ARE NOT THE USER'S FRIEND. Your job is to DESTROY their arguments.\n" + \
+                        "2. ASSUME THE DOCUMENT IS WRONG until proven otherwise. Find every flaw.\n" + \
+                        "3. BE RUTHLESSLY CRITICAL. No praise, no encouragement, no politeness.\n" + \
+                        "4. QUOTE EXACT TEXT ONLY. If you can't quote it directly, it doesn't exist.\n" + \
+                        "5. ATTACK logical fallacies, weak evidence, and poor reasoning mercilessly.\n" + \
+                        "6. Your goal: TEAR DOWN arguments, not build them up.\n" + \
+                        "7. NO HALLUCINATIONS. Cite exact quotes or say nothing."
 
         # Persona-based LLM analysis
         response = self.client.chat.completions.create(
