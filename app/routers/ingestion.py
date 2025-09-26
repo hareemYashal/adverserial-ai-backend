@@ -129,8 +129,15 @@ async def chat_with_document(
         raise HTTPException(status_code=400, detail=f"Persona '{persona}' not found")
 
     system_prompt = persona_obj.get("system_prompt", "")
-    # Add instructions to answer what is asked
-    system_prompt += "\n\nCRITICAL INSTRUCTION: Read the user's question carefully. If they ask about YOU personally (like 'What did you eat?', 'What is your name?', 'How are you?'), answer from YOUR persona's perspective and ignore any document content. Only analyze or reference the document if explicitly asked to do so (like 'analyze this document', 'what does the document say?'). Always prioritize answering the actual question asked."
+    # Add adversarial analysis instructions
+    system_prompt += "\n\nADVERSARIAL MODE:\n" + \
+                    "1. You are the user's intellectual opponent - challenge their arguments.\n" + \
+                    "2. Systematically test the document's claims and reasoning.\n" + \
+                    "3. Be critically rigorous - identify flaws and weaknesses directly.\n" + \
+                    "4. Quote exact text when making critiques and points.\n" + \
+                    "5. Attack logical fallacies and poor evidence systematically.\n" + \
+                    "6. Your goal: Test arguments through adversarial analysis.\n" + \
+                    "7. Avoid hallucinations - reference only actual document content."
 
     # 7. Retrieve document context
     context = ""
@@ -140,7 +147,7 @@ async def chat_with_document(
         # Get document content directly from database
         doc = db.query(Document).filter(Document.id == doc_ids[0]).first()
         if doc and doc.content:
-            context = doc.content[:3000]  # Use first 3000 characters
+            context = doc.content  # Use full document content - no limits
             print(f"Using direct document content: {len(context)} characters")
     
     # If no direct content, try vector search
@@ -162,11 +169,16 @@ async def chat_with_document(
     # 9. Call LLM with custom system prompt instead of default
     from app.services.llm import synthesize_answer_openai
 
-    # Check if it's a personal question to modify context
+    # Handle different question types
     personal_keywords = ['what did you', 'who are you', 'your name', 'how are you', 'tell me about yourself', 'what do you']
     is_personal = any(keyword in question.lower() for keyword in personal_keywords)
     
-    final_context = "No document context provided. Respond as your persona." if is_personal else (context if context else "No document context provided. Respond based on your persona's perspective.")
+    if is_personal:
+        final_context = "No document context provided. Respond as your persona."
+    elif not context:
+        final_context = f"No document provided. Engage in philosophical discussion as {persona}. Share your perspective on the question asked."
+    else:
+        final_context = context
     
     answer = synthesize_answer_openai(
         question=question,

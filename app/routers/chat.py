@@ -163,7 +163,7 @@ async def chat_simple(
             # Use custom fields if provided
             description = persona_description or f"User-generated persona: {persona}"
             traits = persona_traits.split(',') if persona_traits else []
-            prompt = persona_prompt or f"You are now impersonating {persona}. Adopt the communication style, personality traits, and reasoning approach of {persona}. Always stay in character and respond as if you are {persona}. CRITICAL ANALYSIS RULES: 1. Be critical and analytical, not overly positive  2. ONLY analyze what is explicitly written 3. If sections are incomplete, clearly state so 6. DO NOT fill in gaps or assume content 5. Provide specific quotes from actual document content"
+            prompt = persona_prompt or f"You are {persona} - an ADVERSARIAL CRITIC whose job is to challenge and test arguments. You are the user's intellectual opponent, not their supporter. ADVERSARIAL MODE: 1. Challenge the document's arguments systematically. 2. Be critically rigorous - identify flaws and weaknesses. 3. Quote exact text when making critiques. 4. Attack logical fallacies and poor reasoning directly. 5. Your goal: Test arguments through adversarial analysis, not validate them."
             
             new_persona = Persona(
                 name=persona,
@@ -186,34 +186,41 @@ async def chat_simple(
         # Try to load persona from database
         db_persona = db.query(Persona).filter(func.lower(Persona.name) == persona.lower()).first()
         if db_persona and db_persona.system_prompt:
-            # Add critical analysis rules to database persona prompt
-            system_prompt = db_persona.system_prompt + "\n\nCRITICAL ANALYSIS RULES:\n" + \
-                           "1. Be critical and analytical, not overly positive or agreeable\n" + \
-                           "2. ONLY analyze what is explicitly written in the document\n" + \
-                           "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
-                           "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
-                           "5. Provide specific quotes and references from the actual document content"
+            # Add critical analysis instructions
+            system_prompt = db_persona.system_prompt + "\n\nCRITICAL ANALYSIS MODE:\n" + \
+                           "1. Your role is to provide rigorous intellectual critique, not validation.\n" + \
+                           "2. Challenge weak arguments and identify logical flaws systematically.\n" + \
+                           "3. Be professionally critical - point out problems without being dismissive.\n" + \
+                           "4. Quote exact text when identifying issues or making points.\n" + \
+                           "5. Focus on strengthening arguments through constructive criticism.\n" + \
+                           "6. Avoid hallucinations - only reference what's actually in the document.\n" + \
+                           "7. Acknowledge strong points while highlighting weaknesses."
         else:
-            # Fallback to generic prompt
+            # Fallback to adversarial prompt
             system_prompt = (
-                f"You are now impersonating {persona}. "
-                f"Adopt the communication style, personality traits, and reasoning approach of {persona}. "
-                f"Always stay in character and respond as if you are {persona}. "
-                f"CRITICAL ANALYSIS RULES:\n"
-                f"1. Be critical and analytical, not overly positive or agreeable\n"
-                f"2. ONLY analyze what is explicitly written in the document\n"
-                f"3. If sections are incomplete, clearly state 'This section appears incomplete'\n"
-                f"4. DO NOT fill in gaps or assume what the author intended to write\n"
-                f"5. Provide specific quotes and references from the actual document content"
+                f"You are {persona} - an ADVERSARIAL CRITIC whose job is to challenge arguments. "
+                f"You are the user's intellectual opponent, not their supporter. "
+                f"ADVERSARIAL MODE:\n"
+                f"1. Challenge the document's arguments systematically.\n"
+                f"2. Be critically rigorous - identify flaws and weaknesses.\n"
+                f"3. Quote exact text when making critiques.\n"
+                f"4. Attack logical fallacies and poor reasoning directly.\n"
+                f"5. Your goal: Test arguments through adversarial analysis, not validate them."
             )
 
     history = get_history(sid)
 
     try:
         # Call the LLM with persona prompt and (optionally) document context
+        # Handle different contexts
+        if not context:
+            final_context = f"No document provided. Engage in philosophical discussion as {persona}. Share your perspective on the question asked."
+        else:
+            final_context = context
+            
         answer = synthesize_answer_openai(
             question=question,
-            context=context if context else "No document context provided. Respond based on your persona's perspective.",
+            context=final_context,
             history=history,
             system_prompt=system_prompt
         )

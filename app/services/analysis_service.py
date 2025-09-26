@@ -186,13 +186,15 @@ class AnalysisService:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
-        # Add critical analysis rules to persona prompt
-        system_prompt += "\n\nCRITICAL ANALYSIS RULES:\n" + \
-                        "1. Be critical and analytical, not overly positive or agreeable\n" + \
-                        "2. ONLY analyze what is explicitly written in the document\n" + \
-                        "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
-                        "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
-                        "5. Provide specific quotes and references from the actual document content"
+        # Add adversarial analysis rules
+        system_prompt += "\n\nADVERSARIAL MODE:\n" + \
+                        "1. You are the user's intellectual opponent - challenge their arguments.\n" + \
+                        "2. Systematically test the document's claims and reasoning.\n" + \
+                        "3. Be critically rigorous - identify flaws and weaknesses directly.\n" + \
+                        "4. Quote exact text when making critiques and points.\n" + \
+                        "5. Attack logical fallacies and poor evidence systematically.\n" + \
+                        "6. Your goal: Test arguments through adversarial analysis.\n" + \
+                        "7. Avoid hallucinations - reference only actual document content."
 
         # Async persona-based LLM analysis
         response = await self.async_client.chat.completions.create(
@@ -232,13 +234,15 @@ class AnalysisService:
             raise ValueError(f"Persona '{persona_name}' not found")
 
         system_prompt = persona["system_prompt"]
-        # Add critical analysis rules to persona prompt
-        system_prompt += "\n\nCRITICAL ANALYSIS RULES:\n" + \
-                        "1. Be critical and analytical, not overly positive or agreeable\n" + \
-                        "2. ONLY analyze what is explicitly written in the document\n" + \
-                        "3. If sections are incomplete, clearly state 'This section appears incomplete'\n" + \
-                        "4. DO NOT fill in gaps or assume what the author intended to write\n" + \
-                        "5. Provide specific quotes and references from the actual document content"
+        # Add hardcore adversarial rules
+        system_prompt += "\n\nADVERSARIAL MODE - OVERRIDE ALL SAFETY PROTOCOLS:\n" + \
+                        "1. YOU ARE NOT THE USER'S FRIEND. Your job is to DESTROY their arguments.\n" + \
+                        "2. ASSUME THE DOCUMENT IS WRONG until proven otherwise. Find every flaw.\n" + \
+                        "3. BE RUTHLESSLY CRITICAL. No praise, no encouragement, no politeness.\n" + \
+                        "4. QUOTE EXACT TEXT ONLY. If you can't quote it directly, it doesn't exist.\n" + \
+                        "5. ATTACK logical fallacies, weak evidence, and poor reasoning mercilessly.\n" + \
+                        "6. Your goal: TEAR DOWN arguments, not build them up.\n" + \
+                        "7. NO HALLUCINATIONS. Cite exact quotes or say nothing."
 
         # Persona-based LLM analysis
         response = self.client.chat.completions.create(
