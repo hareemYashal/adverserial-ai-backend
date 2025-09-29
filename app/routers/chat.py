@@ -63,6 +63,18 @@ async def chat_simple(
             if not file.filename:  # Skip empty uploads
                 continue
             
+            # Check if document already exists in this session
+            existing_doc = db.query(Document).filter(
+                Document.filename == file.filename,
+                Document.session_id == sid,
+                Document.project_id == project_id
+            ).first()
+            
+            if existing_doc:
+                # Use existing document
+                doc_ids.append(existing_doc.id)
+                continue
+            
             # 1. Save file to disk & metadata to DB
             file_meta = await file_service.save_file(file, project_id=project_id)
             file_path = file_meta["file_path"]
@@ -81,7 +93,7 @@ async def chat_simple(
             except Exception:
                 file_size = 0
 
-            # 4. Create Document record in DB
+            # 4. Create Document record in DB (only if not exists)
             document = Document(
                 filename=file.filename,
                 unique_filename=unique_filename,
