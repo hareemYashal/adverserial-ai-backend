@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ForgetPassword, ForgotPasswordRequest, ResetPassword
+from app.services.email_service import email_service
+import secrets
+import random
+import uuid
+from datetime import datetime, timedelta
 from app.services.auth_service import auth_service, get_current_active_user
 from app.config import ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -149,3 +154,122 @@ async def verify_token(current_user: User = Depends(get_current_active_user)):
             "is_active": current_user.is_active
         }
     }
+
+# In-memory storage for reset tokens (use Redis in production)
+reset_tokens = {}
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Send password reset email to user.
+    
+    - **email**: User's email address
+    """
+    # Find user by email
+    user = auth_service.get_user_by_email(db, request.email)
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If email exists, password reset instructions have been sent"}
+    
+    # Generate 4-digit OTP
+    reset_token = str(random.randint(1000, 9999))
+    
+    # Store OTP with user email and expiration (15 minutes)
+    reset_tokens[reset_token] = {
+        "email": request.email,
+        "user_id": user.id,
+        "expires_at": datetime.utcnow() + timedelta(minutes=15)
+    }
+    
+    # Send email
+    email_sent = email_service.send_password_reset_email(
+        to_email=request.email,
+        username=user.username,
+        reset_token=reset_token
+    )
+    
+    if not email_sent:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send reset email"
+        )
+    
+    return {"message": "Password reset instructions have been sent to your email"}
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPassword, db: Session = Depends(get_db)):
+    """
+    Reset password using OTP only.
+    
+    - **otp**: 4-digit OTP from email
+    - **new_password**: New password to set
+    """
+    # Validate OTP
+    if request.otp not in reset_tokens:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+    
+    token_data = reset_tokens[request.otp]
+    
+    # Check if OTP expired
+    if datetime.utcnow() > token_data["expires_at"]:
+        del reset_tokens[request.otp]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired"
+        )
+    
+    # Find user by stored email
+    user = auth_service.get_user_by_email(db, token_data["email"])
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    new_hashed_password = auth_service.get_password_hash(request.new_password)
+    user.hashed_password = new_hashed_password
+    
+    db.commit()
+    db.refresh(user)
+    
+    # Remove used OTP
+    del reset_tokens[request.otp]
+    
+    return {"message": "Password has been reset successfully"}
+
+@router.post("/forget-password")
+async def forget_password(forget_data: ForgetPassword, db: Session = Depends(get_db)):
+    """
+    Change password by verifying username and old password.
+    
+    - **username**: User's username
+    - **old_password**: Current password for verification
+    - **new_password**: New password to set
+    """
+    # Get user by username
+    user = auth_service.get_user_by_username(db, forget_data.username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify old password
+    if not auth_service.verify_password(forget_data.old_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Old password is incorrect"
+        )
+    
+    # Update password
+    new_hashed_password = auth_service.get_password_hash(forget_data.new_password)
+    user.hashed_password = new_hashed_password
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {"message": "Password updated successfully"}

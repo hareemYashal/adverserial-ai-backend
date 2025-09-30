@@ -17,7 +17,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 # JWT Authentication
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-for-production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10020"))
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
