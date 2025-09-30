@@ -149,11 +149,11 @@ async def chat_simple(
         
         sid = session_id or first_doc.session_id
         
-        # Get context from session (all documents in session)
+        # Get context from vector search using document_id filter
         docs, metadatas, distances, chunk_ids = similarity_search(
            query=question,
            top_k=10,
-           filters={"session_id": sid}
+           filters={"document_id": doc_id_list[0]}
         )
         context = "\n\n".join(docs)
     

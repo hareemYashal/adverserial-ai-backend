@@ -51,6 +51,18 @@ async def chat_with_document(
             if not file.filename:  # Skip empty uploads
                 continue
             
+            # Check if document already exists in this session
+            existing_doc = db.query(Document).filter(
+                Document.filename == file.filename,
+                Document.session_id == sid,
+                Document.project_id == project_id
+            ).first()
+            
+            if existing_doc:
+                print(f"Document {file.filename} already exists in session {sid}")
+                doc_ids.append(existing_doc.id)
+                continue
+            
             # 1. Save file to disk & metadata to DB
             file_meta = await file_service.save_file(file, project_id=project_id)
             file_path = file_meta["file_path"]

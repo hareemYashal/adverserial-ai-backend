@@ -41,6 +41,25 @@ async def process_document_text(document_id: int, db: Session):
         
         db.commit()
         
+        # Chunk and add to vector database
+        try:
+            from app.services.chunking import chunk_text
+            from app.services.retrieval import add_chunks
+            import uuid
+            
+            chunks = chunk_text(extracted_text, max_tokens=150, overlap_sentences=2)
+            ids = [str(uuid.uuid4()) for _ in chunks]
+            metas = [
+                {
+                    "document_id": document.id,
+                    "session_id": document.session_id or "no_session"
+                }
+                for _ in chunks
+            ]
+            add_chunks(chunks, metas, ids)
+        except Exception as e:
+            print(f"Warning: Failed to chunk document {document.id}: {e}")
+        
     except Exception as e:
         # Update document with error status
         document = db.query(Document).filter(Document.id == document_id).first()
