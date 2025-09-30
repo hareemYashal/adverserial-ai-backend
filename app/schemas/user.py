@@ -44,3 +44,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+# Schema for forget password
+class ForgetPassword(BaseModel):
+    username: str
+    old_password: str
+    new_password: str
+
+# Schema for forgot password request (email-based)
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+# Schema for reset password with OTP only
+class ResetPassword(BaseModel):
+    otp: str
+    new_password: str
