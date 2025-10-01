@@ -226,9 +226,9 @@ async def chat_simple(
         # Call the LLM with persona prompt and (optionally) document context
         # Handle different contexts
         if not context:
-            final_context = f"No document provided. Engage in philosophical discussion as {persona}. Share your perspective on the question asked."
+            final_context = f"No document provided. As {persona}, provide a critical adversarial analysis of the question asked. Challenge assumptions, identify potential flaws in reasoning, and offer rigorous intellectual critique from your philosophical perspective."
         else:
-            final_context = context
+            final_context = f"Document content:\n{context}\n\nAs {persona}, analyze this document with ADVERSARIAL CRITIQUE:\n1. Challenge the document's arguments systematically\n2. Identify logical flaws and weaknesses\n3. Quote exact text when making critiques\n4. Attack poor reasoning directly\n5. Test arguments through rigorous analysis\n6. Be the intellectual opponent, not supporter"
             
         answer = synthesize_answer_openai(
             question=question,
