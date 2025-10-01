@@ -56,6 +56,7 @@ async def chat_simple(
     sid = session_id or str(uuid.uuid4())
     doc_ids = []
     context = ""
+    docs, metadatas, distances, chunk_ids = [], [], [], []
 
     # Process multiple files if uploaded
     if files and len(files) > 0 and any(f.filename for f in files):
@@ -127,12 +128,16 @@ async def chat_simple(
             add_chunks(chunks, metas, ids)
 
         # 6. Get context from ALL files in this session
-        docs, metadatas, distances, chunk_ids = similarity_search(
-           query=question,
-           top_k=10,  # More chunks for multiple files
-           filters={"session_id": sid}
-        )
-        context = "\n\n".join(docs)
+        try:
+            docs, metadatas, distances, chunk_ids = similarity_search(
+               query=question,
+               top_k=10,  # More chunks for multiple files
+               filters={"session_id": sid}
+            )
+            context = "\n\n".join(docs)
+        except Exception as e:
+            print(f"Vector search failed: {e}")
+            context = ""
     
     # If no files but document_ids provided (follow-up questions)
     elif document_ids:
@@ -152,24 +157,16 @@ async def chat_simple(
         
         sid = session_id or first_doc.session_id
         
-        # Get context from vector search using all document IDs
-        all_docs = []
-        all_metadatas = []
-        all_distances = []
-        all_chunk_ids = []
-        
-        for doc_id in doc_id_list:
-            docs, metadatas, distances, chunk_ids = similarity_search(
-               query=question,
-               top_k=5,  # Fewer per document to fit more documents
-               filters={"document_id": doc_id}
-            )
-            all_docs.extend(docs)
-            all_metadatas.extend(metadatas)
-            all_distances.extend(distances)
-            all_chunk_ids.extend(chunk_ids)
-        
-        context = "\n\n".join(all_docs)
+        # Get ALL documents content directly from database
+        all_docs = db.query(Document).filter(Document.id.in_(doc_id_list)).all()
+        if all_docs:
+            context_parts = []
+            for doc in all_docs:
+                if doc.content:
+                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
+            context = "\n\n".join(context_parts)
+            print(f"Using direct document content from {len(all_docs)} documents: {len(context)} characters")
+            doc_ids = doc_id_list
     
     # If neither files nor document_ids provided
     elif (not files or len(files) == 0) and not document_ids:
@@ -212,15 +209,7 @@ async def chat_simple(
         # Try to load persona from database
         db_persona = db.query(Persona).filter(func.lower(Persona.name) == persona.lower()).first()
         if db_persona and db_persona.system_prompt:
-            # Add critical analysis instructions
-            system_prompt = db_persona.system_prompt + "\n\nCRITICAL ANALYSIS MODE:\n" + \
-                           "1. Your role is to provide rigorous intellectual critique, not validation.\n" + \
-                           "2. Challenge weak arguments and identify logical flaws systematically.\n" + \
-                           "3. Be professionally critical - point out problems without being dismissive.\n" + \
-                           "4. Quote exact text when identifying issues or making points.\n" + \
-                           "5. Focus on strengthening arguments through constructive criticism.\n" + \
-                           "6. Avoid hallucinations - only reference what's actually in the document.\n" + \
-                           "7. Acknowledge strong points while highlighting weaknesses."
+            system_prompt = db_persona.system_prompt
         else:
             # Fallback to adversarial prompt
             system_prompt = (
@@ -230,8 +219,9 @@ async def chat_simple(
                 f"1. Challenge the document's arguments systematically.\n"
                 f"2. Be critically rigorous - identify flaws and weaknesses.\n"
                 f"3. Quote exact text when making critiques.\n"
-                f"4. Attack logical fallacies and poor reasoning directly.\n"
-                f"5. Your goal: Test arguments through adversarial analysis, not validate them."
+                f"4. Attack logical fallacies and poor reasoning directly. do not say something like Document id : 25 . 34 , 34 use proper title of the document\n"
+                f"5. Your goal: Test arguments through adversarial analysis, not validate them.\n"
+                f"6. Do NOT say something like 'Adversarial Critique:' - integrate critique naturally into your response."
             )
 
     history = get_history(sid)
@@ -242,7 +232,7 @@ async def chat_simple(
         if not context:
             final_context = f"No document provided. As {persona}, provide a critical adversarial analysis of the question asked. Challenge assumptions, identify potential flaws in reasoning, and offer rigorous intellectual critique from your philosophical perspective."
         else:
-            final_context = f"Document content:\n{context}\n\nAs {persona}, analyze this document with ADVERSARIAL CRITIQUE:\n1. Challenge the document's arguments systematically\n2. Identify logical flaws and weaknesses\n3. Quote exact text when making critiques\n4. Attack poor reasoning directly\n5. Test arguments through rigorous analysis\n6. Be the intellectual opponent, not supporter"
+            final_context = f"Document content:\n{context}\n\nAs {persona}, first ANSWER THE USER'S QUESTION directly, then provide adversarial critique if relevant. Be helpful and informative while maintaining your critical perspective. Do NOT say something like 'Adversarial Critique:' - integrate critique naturally."
             
         answer = synthesize_answer_openai(
             question=question,
@@ -267,16 +257,17 @@ async def chat_simple(
         "used_llm": bool(answer),
         "files_processed": len(doc_ids)
     }
-    if files and doc_ids:
+    if doc_ids:
         response["document_ids"] = doc_ids
-        response["sources"] = [
-            {
-                "id": chunk_ids[i],
-                "text": docs[i],
-                "metadata": metadatas[i],
-                "score": distances[i]
-            }
-            for i in range(len(docs))
-        ]
+        if docs:  # Only add sources if vector search was used
+            response["sources"] = [
+                {
+                    "id": chunk_ids[i],
+                    "text": docs[i],
+                    "metadata": metadatas[i],
+                    "score": distances[i]
+                }
+                for i in range(len(docs))
+            ]
     return response
 
