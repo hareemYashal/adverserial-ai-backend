@@ -58,9 +58,9 @@ async def chat_simple(
     context = ""
 
     # Process multiple files if uploaded
-    if files and len(files) > 0:
+    if files and len(files) > 0 and any(f.filename for f in files):
         for file in files:
-            if not file.filename:  # Skip empty uploads
+            if not file.filename or file.filename == '':  # Skip empty uploads
                 continue
             
             # Check if document already exists in this project (by filename and size)
@@ -152,13 +152,24 @@ async def chat_simple(
         
         sid = session_id or first_doc.session_id
         
-        # Get context from vector search using document_id filter
-        docs, metadatas, distances, chunk_ids = similarity_search(
-           query=question,
-           top_k=10,
-           filters={"document_id": doc_id_list[0]}
-        )
-        context = "\n\n".join(docs)
+        # Get context from vector search using all document IDs
+        all_docs = []
+        all_metadatas = []
+        all_distances = []
+        all_chunk_ids = []
+        
+        for doc_id in doc_id_list:
+            docs, metadatas, distances, chunk_ids = similarity_search(
+               query=question,
+               top_k=5,  # Fewer per document to fit more documents
+               filters={"document_id": doc_id}
+            )
+            all_docs.extend(docs)
+            all_metadatas.extend(metadatas)
+            all_distances.extend(distances)
+            all_chunk_ids.extend(chunk_ids)
+        
+        context = "\n\n".join(all_docs)
     
     # If neither files nor document_ids provided
     elif (not files or len(files) == 0) and not document_ids:
