@@ -58,16 +58,19 @@ async def chat_simple(
     context = ""
 
     # Process multiple files if uploaded
-    if files and len(files) > 0:
+    if files and len(files) > 0 and any(f.filename for f in files):
         for file in files:
-            if not file.filename:  # Skip empty uploads
+            if not file.filename or file.filename == '':  # Skip empty uploads
                 continue
             
-            # Check if document already exists in this session
+            # Check if document already exists in this project (by filename and size)
+            file_size_temp = len(await file.read())
+            await file.seek(0)  # Reset file pointer
+            
             existing_doc = db.query(Document).filter(
                 Document.filename == file.filename,
-                Document.session_id == sid,
-                Document.project_id == project_id
+                Document.project_id == project_id,
+                Document.file_size == file_size_temp
             ).first()
             
             if existing_doc:
@@ -149,13 +152,24 @@ async def chat_simple(
         
         sid = session_id or first_doc.session_id
         
-        # Get context from vector search using document_id filter
-        docs, metadatas, distances, chunk_ids = similarity_search(
-           query=question,
-           top_k=10,
-           filters={"document_id": doc_id_list[0]}
-        )
-        context = "\n\n".join(docs)
+        # Get context from vector search using all document IDs
+        all_docs = []
+        all_metadatas = []
+        all_distances = []
+        all_chunk_ids = []
+        
+        for doc_id in doc_id_list:
+            docs, metadatas, distances, chunk_ids = similarity_search(
+               query=question,
+               top_k=5,  # Fewer per document to fit more documents
+               filters={"document_id": doc_id}
+            )
+            all_docs.extend(docs)
+            all_metadatas.extend(metadatas)
+            all_distances.extend(distances)
+            all_chunk_ids.extend(chunk_ids)
+        
+        context = "\n\n".join(all_docs)
     
     # If neither files nor document_ids provided
     elif (not files or len(files) == 0) and not document_ids:
@@ -226,9 +240,9 @@ async def chat_simple(
         # Call the LLM with persona prompt and (optionally) document context
         # Handle different contexts
         if not context:
-            final_context = f"No document provided. Engage in philosophical discussion as {persona}. Share your perspective on the question asked."
+            final_context = f"No document provided. As {persona}, provide a critical adversarial analysis of the question asked. Challenge assumptions, identify potential flaws in reasoning, and offer rigorous intellectual critique from your philosophical perspective."
         else:
-            final_context = context
+            final_context = f"Document content:\n{context}\n\nAs {persona}, analyze this document with ADVERSARIAL CRITIQUE:\n1. Challenge the document's arguments systematically\n2. Identify logical flaws and weaknesses\n3. Quote exact text when making critiques\n4. Attack poor reasoning directly\n5. Test arguments through rigorous analysis\n6. Be the intellectual opponent, not supporter"
             
         answer = synthesize_answer_openai(
             question=question,
