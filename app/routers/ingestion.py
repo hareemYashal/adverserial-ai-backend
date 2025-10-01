@@ -156,11 +156,15 @@ async def chat_with_document(
     docs, metadatas, distances, chunk_ids = [], [], [], []
     
     if doc_ids:
-        # Get document content directly from database
-        doc = db.query(Document).filter(Document.id == doc_ids[0]).first()
-        if doc and doc.content:
-            context = doc.content  # Use full document content - no limits
-            print(f"Using direct document content: {len(context)} characters")
+        # Get ALL documents content directly from database
+        all_docs = db.query(Document).filter(Document.id.in_(doc_ids)).all()
+        if all_docs:
+            context_parts = []
+            for doc in all_docs:
+                if doc.content:
+                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
+            context = "\n\n".join(context_parts)
+            print(f"Using direct document content from {len(all_docs)} documents: {len(context)} characters")
     
     # If no direct content, try vector search
     if not context:
