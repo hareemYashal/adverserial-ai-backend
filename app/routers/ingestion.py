@@ -100,7 +100,7 @@ async def chat_with_document(
             doc_ids.append(document.id)
 
             # 5. Chunk text and add to vector DB
-            chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+            chunks = chunk_text(text, max_tokens=350, overlap_sentences=2)
             ids = [str(uuid.uuid4()) for _ in chunks]
             metas = [
                 {
@@ -156,18 +156,67 @@ async def chat_with_document(
     docs, metadatas, distances, chunk_ids = [], [], [], []
     
     if doc_ids:
-        # Get ALL documents content directly from database
+        # First ensure documents are chunked in vector DB
         all_docs = db.query(Document).filter(Document.id.in_(doc_ids)).all()
-        if all_docs:
-            context_parts = []
-            for doc in all_docs:
-                if doc.content:
-                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
-            context = "\n\n".join(context_parts)
-            print(f"Using direct document content from {len(all_docs)} documents: {len(context)} characters")
+        for doc in all_docs:
+            if doc.content:
+                # Check if already chunked
+                try:
+                    existing_chunks = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
+                    if not existing_chunks[0] or len(existing_chunks[0]) == 0:  # No chunks found
+                        chunks = chunk_text(doc.content, max_tokens=150, overlap_sentences=2)
+                        ids = [str(uuid.uuid4()) for _ in chunks]
+                        metas = [{"document_id": doc.id, "session_id": sid} for _ in chunks]
+                        add_chunks(chunks, metas, ids)
+                        print(f"✅ Chunked document {doc.id} into {len(chunks)} chunks")
+                    else:
+                        print(f"⚡ Document {doc.id} already chunked, skipping")
+                except Exception as e:
+                    print(f"❌ Error with doc {doc.id}: {e}")
+                    chunks = chunk_text(doc.content, max_tokens=150, overlap_sentences=2)
+                    ids = [str(uuid.uuid4()) for _ in chunks]
+                    metas = [{"document_id": doc.id, "session_id": sid} for _ in chunks]
+                    add_chunks(chunks, metas, ids)
+                    print(f"🔄 Fallback chunked document {doc.id} into {len(chunks)} chunks")
+        
+        # Use vector search for context
+        try:
+            if len(doc_ids) == 1:
+                # Single document filter - increase chunks for author questions
+                author_keywords = ['author', 'written by', 'by ', 'wrote']
+                is_author_question = any(keyword in question.lower() for keyword in author_keywords)
+                top_k = 25 if is_author_question else 15
+                
+                docs, metadatas, distances, chunk_ids = similarity_search(
+                    query=question,
+                    top_k=top_k,
+                    filters={"document_id": doc_ids[0]}  # Single document ID
+                )
+            else:
+                # Multiple documents - search without document filter, then filter results
+                docs, metadatas, distances, chunk_ids = similarity_search(
+                    query=question,
+                    top_k=30,  # Get more results to filter
+                    filters={"session_id": sid}  # Use session filter instead
+                )
+                # Filter results to only include requested documents
+                filtered_docs, filtered_metas, filtered_distances, filtered_ids = [], [], [], []
+                for i, meta in enumerate(metadatas):
+                    if meta.get("document_id") in doc_ids:
+                        filtered_docs.append(docs[i])
+                        filtered_metas.append(meta)
+                        filtered_distances.append(distances[i])
+                        filtered_ids.append(chunk_ids[i])
+                docs, metadatas, distances, chunk_ids = filtered_docs[:15], filtered_metas[:15], filtered_distances[:15], filtered_ids[:15]
+            
+            context = "\n\n".join(docs)
+            print(f"Using RAG vector search from {len(doc_ids)} documents: {len(context)} characters")
+        except Exception as e:
+            print(f"Vector search failed: {e}")
+            context = ""
     
-    # If no direct content, try vector search
-    if not context:
+    # Fallback to session-based search if no doc_ids
+    elif not context:
         try:
             docs, metadatas, distances, chunk_ids = similarity_search(
                query=question,
@@ -175,6 +224,7 @@ async def chat_with_document(
                filters={"session_id": sid}
             )
             context = "\n\n".join(docs)
+            print(f"Using session-based vector search: {len(context)} characters")
         except Exception as e:
             print(f"Vector search failed: {e}")
             context = ""
