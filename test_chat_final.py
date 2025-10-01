@@ -29,31 +29,31 @@ def main():
     user_id = 1  # Assume user ID 1
     print("✅ Using existing project and document!")
     
-    # Message 1: Analyze 3 documents
-    print("\n=== Message 1: Analyze These 3 Documents ===")
+    # Message 1: Analyze these 2 documents
+    print("\n=== Message 1: Analyze These 2 Documents ===")
     chat_data = {
         "project_id": 4,
-        "question": "analyze these 3 documents",
-        "persona": "Kantian",
-        "session_id": "ec2ca97c-c9be-4cf5-83e7-eccc7bd7862f",
-        "document_id": "59,60,61"
+        "question": "analyze these 2 documents and compare them",
+        "persona": "Logical Positivist",
+        "session_id": "a01e1973-fef6-4c38-a62e-c3389082a4f2",
+        "document_id": "66,60"  # Two documents
     }
     
     response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2)}")
     
-    # Message 2: Get 5 references from each
-    print("\n=== Message 2: Give Me Only 5 References From Each ===")
-    chat_data["question"] = "give me only 5 references from each"
+    # Message 2: Who are the authors
+    print("\n=== Message 2: Who Are The Authors ===")
+    chat_data["question"] = "who are the authors of these documents?"
     
     response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2)}")
     
-    # Message 3: Authors ideology
-    print("\n=== Message 3: Authors Ideology ===")
-    chat_data["question"] = "3ono documents kay authors ki ideology batao"
+    # Message 3: Extract references from both
+    print("\n=== Message 3: Extract References From Both ===")
+    chat_data["question"] = "extract references from both documents separately"
     
     response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
     print(f"Status: {response.status_code}")

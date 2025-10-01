@@ -115,40 +115,29 @@ async def chat_simple(
             db.refresh(document)
             doc_ids.append(document.id)
 
-            # 5. Chunk text and add to vector DB (DISABLED - using full document content)
-            # chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
-            # ids = [str(uuid.uuid4()) for _ in chunks]
-            # metas = [
-            #     {
-            #         "document_id": document.id,
-            #         "session_id": sid
-            #     }
-            #     for i in range(len(chunks))
-            # ]
-            # add_chunks(chunks, metas, ids)
+            # 5. Chunk text and add to vector DB
+            chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+            ids = [str(uuid.uuid4()) for _ in chunks]
+            metas = [
+                {
+                    "document_id": document.id,
+                    "session_id": sid
+                }
+                for i in range(len(chunks))
+            ]
+            add_chunks(chunks, metas, ids)
 
-        # 6. Get context from ALL files in this session (DISABLED - using full document content)
-        # try:
-        #     docs, metadatas, distances, chunk_ids = similarity_search(
-        #        query=question,
-        #        top_k=10,  # More chunks for multiple files
-        #        filters={"session_id": sid}
-        #     )
-        #     context = "\n\n".join(docs)
-        # except Exception as e:
-        #     print(f"Vector search failed: {e}")
-        #     context = ""
-        
-        # Use full document content instead of vector search
-        all_docs = db.query(Document).filter(Document.session_id == sid).all()
-        if all_docs:
-            context_parts = []
-            for doc in all_docs:
-                if doc.content:
-                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
-            context = "\n\n".join(context_parts)
-            print(f"Using full document content from {len(all_docs)} uploaded files: {len(context)} characters")
-        else:
+        # 6. Get context using vector search
+        try:
+            docs, metadatas, distances, chunk_ids = similarity_search(
+               query=question,
+               top_k=15,  # More chunks for multiple files
+               filters={"session_id": sid}
+            )
+            context = "\n\n".join(docs)
+            print(f"Using vector search from session {sid}: {len(context)} characters")
+        except Exception as e:
+            print(f"Vector search failed: {e}")
             context = ""
     
     # If no files but document_ids provided (follow-up questions)
@@ -169,15 +158,55 @@ async def chat_simple(
         
         sid = session_id or first_doc.session_id
         
-        # Get ALL documents content directly from database
-        all_docs = db.query(Document).filter(Document.id.in_(doc_id_list)).all()
-        if all_docs:
-            context_parts = []
+        # Use vector search for document_ids
+        try:
+            # First, ensure documents are chunked and in vector DB
+            all_docs = db.query(Document).filter(Document.id.in_(doc_id_list)).all()
             for doc in all_docs:
                 if doc.content:
-                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
-            context = "\n\n".join(context_parts)
-            print(f"Using direct document content from {len(all_docs)} documents: {len(context)} characters")
+                    # Check if already chunked by looking for existing chunks
+                    existing_chunks = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
+                    if not existing_chunks[0]:  # No chunks found, need to chunk
+                        chunks = chunk_text(doc.content, max_tokens=150, overlap_sentences=2)
+                        ids = [str(uuid.uuid4()) for _ in chunks]
+                        metas = [{"document_id": doc.id, "session_id": sid} for _ in chunks]
+                        add_chunks(chunks, metas, ids)
+            
+            # Now do vector search across all requested documents
+            if len(doc_id_list) == 1:
+                # Single document filter - increase chunks for author questions
+                author_keywords = ['author', 'written by', 'by ', 'wrote']
+                is_author_question = any(keyword in question.lower() for keyword in author_keywords)
+                top_k = 25 if is_author_question else 15
+                
+                docs, metadatas, distances, chunk_ids = similarity_search(
+                    query=question,
+                    top_k=top_k,
+                    filters={"document_id": doc_id_list[0]}  # Single document ID
+                )
+            else:
+                # Multiple documents - search without document filter, then filter results
+                docs, metadatas, distances, chunk_ids = similarity_search(
+                    query=question,
+                    top_k=30,  # Get more results to filter
+                    filters={"session_id": sid}  # Use session filter instead
+                )
+                # Filter results to only include requested documents
+                filtered_docs, filtered_metas, filtered_distances, filtered_ids = [], [], [], []
+                for i, meta in enumerate(metadatas):
+                    if meta.get("document_id") in doc_id_list:
+                        filtered_docs.append(docs[i])
+                        filtered_metas.append(meta)
+                        filtered_distances.append(distances[i])
+                        filtered_ids.append(chunk_ids[i])
+                docs, metadatas, distances, chunk_ids = filtered_docs[:15], filtered_metas[:15], filtered_distances[:15], filtered_ids[:15]
+            
+            context = "\n\n".join(docs)
+            print(f"Using RAG vector search from {len(doc_id_list)} documents: {len(context)} characters")
+            doc_ids = doc_id_list
+        except Exception as e:
+            print(f"Vector search failed: {e}")
+            context = ""
             doc_ids = doc_id_list
     
     # If neither files nor document_ids provided
