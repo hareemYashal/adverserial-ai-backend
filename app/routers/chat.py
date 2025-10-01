@@ -115,28 +115,40 @@ async def chat_simple(
             db.refresh(document)
             doc_ids.append(document.id)
 
-            # 5. Chunk text and add to vector DB
-            chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
-            ids = [str(uuid.uuid4()) for _ in chunks]
-            metas = [
-                {
-                    "document_id": document.id,
-                    "session_id": sid
-                }
-                for i in range(len(chunks))
-            ]
-            add_chunks(chunks, metas, ids)
+            # 5. Chunk text and add to vector DB (DISABLED - using full document content)
+            # chunks = chunk_text(text, max_tokens=150, overlap_sentences=2)
+            # ids = [str(uuid.uuid4()) for _ in chunks]
+            # metas = [
+            #     {
+            #         "document_id": document.id,
+            #         "session_id": sid
+            #     }
+            #     for i in range(len(chunks))
+            # ]
+            # add_chunks(chunks, metas, ids)
 
-        # 6. Get context from ALL files in this session
-        try:
-            docs, metadatas, distances, chunk_ids = similarity_search(
-               query=question,
-               top_k=10,  # More chunks for multiple files
-               filters={"session_id": sid}
-            )
-            context = "\n\n".join(docs)
-        except Exception as e:
-            print(f"Vector search failed: {e}")
+        # 6. Get context from ALL files in this session (DISABLED - using full document content)
+        # try:
+        #     docs, metadatas, distances, chunk_ids = similarity_search(
+        #        query=question,
+        #        top_k=10,  # More chunks for multiple files
+        #        filters={"session_id": sid}
+        #     )
+        #     context = "\n\n".join(docs)
+        # except Exception as e:
+        #     print(f"Vector search failed: {e}")
+        #     context = ""
+        
+        # Use full document content instead of vector search
+        all_docs = db.query(Document).filter(Document.session_id == sid).all()
+        if all_docs:
+            context_parts = []
+            for doc in all_docs:
+                if doc.content:
+                    context_parts.append(f"--- Document {doc.id}: {doc.filename} ---\n{doc.content}")
+            context = "\n\n".join(context_parts)
+            print(f"Using full document content from {len(all_docs)} uploaded files: {len(context)} characters")
+        else:
             context = ""
     
     # If no files but document_ids provided (follow-up questions)
