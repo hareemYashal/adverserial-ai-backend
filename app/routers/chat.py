@@ -63,11 +63,14 @@ async def chat_simple(
             if not file.filename:  # Skip empty uploads
                 continue
             
-            # Check if document already exists in this session
+            # Check if document already exists in this project (by filename and size)
+            file_size_temp = len(await file.read())
+            await file.seek(0)  # Reset file pointer
+            
             existing_doc = db.query(Document).filter(
                 Document.filename == file.filename,
-                Document.session_id == sid,
-                Document.project_id == project_id
+                Document.project_id == project_id,
+                Document.file_size == file_size_temp
             ).first()
             
             if existing_doc:
