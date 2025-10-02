@@ -165,12 +165,15 @@ async def chat_simple(
             for doc in all_docs:
                 if doc.content:
                     # Check if already chunked by looking for existing chunks
-                    existing_chunks = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
-                    if not existing_chunks[0]:  # No chunks found, need to chunk
+                    existing_docs, _, _, _ = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
+                    if not existing_docs:  # No chunks found, need to chunk
+                        print(f"⚡ Document {doc.id} not chunked, adding chunks...")
                         chunks = chunk_text(doc.content, max_tokens=150, overlap_sentences=2)
                         ids = [str(uuid.uuid4()) for _ in chunks]
                         metas = [{"document_id": doc.id, "session_id": sid} for _ in chunks]
                         add_chunks(chunks, metas, ids)
+                    else:
+                        print(f"⚡ Document {doc.id} already chunked, skipping")
             
             # Now do vector search across all requested documents
             if len(doc_id_list) == 1:

@@ -29,35 +29,55 @@ def main():
     user_id = 1  # Assume user ID 1
     print("✅ Using existing project and document!")
     
-    # Message 1: Analyze these 2 documents
-    print("\n=== Message 1: Analyze These 2 Documents ===")
-    chat_data = {
-        "project_id": 4,
-        "question": "analyze these 2 documents and compare them",
-        "persona": "Logical Positivist",
-        "session_id": "a01e1973-fef6-4c38-a62e-c3389082a4f2",
-        "document_id": "66,60"  # Two documents
-    }
+    # Test questions from logs
+    test_questions = [
+        {
+            "project_id": 4,
+            "question": "Tell me about these two documents",
+            "persona": "Kantian",
+            "session_id": "5a065dca-20da-43db-b1d4-14a8e7edc08a",
+            "document_id": "83,84"
+        },
+        {
+            "project_id": 4,
+            "question": "just answer with a 'Yes' or 'No'. have I uploaded 2 documents for you to review?",
+            "persona": "Kantian",
+            "session_id": "5a065dca-20da-43db-b1d4-14a8e7edc08a",
+            "document_id": "83,84"
+        },
+        {
+            "project_id": 4,
+            "question": "just a 'Yes' or 'No'.",
+            "persona": "Kantian",
+            "session_id": "5a065dca-20da-43db-b1d4-14a8e7edc08a",
+            "document_id": "83,84"
+        },
+        {
+            "project_id": 4,
+            "question": "so, you're saying I haven't uploaded the documents?",
+            "persona": "Kantian",
+            "session_id": "5a065dca-20da-43db-b1d4-14a8e7edc08a",
+            "document_id": "83,84"
+        }
+    ]
     
-    response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
-    print(f"Status: {response.status_code}")
-    print(f"Response: {json.dumps(response.json(), indent=2)}")
-    
-    # Message 2: Who are the authors
-    print("\n=== Message 2: Who Are The Authors ===")
-    chat_data["question"] = "who are the authors of these documents?"
-    
-    response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
-    print(f"Status: {response.status_code}")
-    print(f"Response: {json.dumps(response.json(), indent=2)}")
-    
-    # Message 3: Extract references from both
-    print("\n=== Message 3: Extract References From Both ===")
-    chat_data["question"] = "extract references from both documents separately"
-    
-    response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
-    print(f"Status: {response.status_code}")
-    print(f"Response: {json.dumps(response.json(), indent=2)}")
+    for i, chat_data in enumerate(test_questions, 1):
+        print(f"\n=== Test {i}: {chat_data['question'][:50]}... ===")
+        
+        response = requests.post(f"{BASE_URL}/api/chat", data=chat_data, headers=headers)
+        print(f"Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Answer length: {len(result.get('answer', ''))} chars")
+            print(f"📋 Document IDs: {result.get('document_ids', [])}")
+            print(f"🔍 Sources: {len(result.get('sources', []))}")
+            answer = result.get('answer', 'No answer')
+            print(f"💬 Answer: {answer[:200]}..." if len(answer) > 200 else answer)
+        else:
+            print(f"❌ Error: {response.text}")
+        
+        print("-" * 60)
 
 if __name__ == "__main__":
     main()
