@@ -138,7 +138,11 @@ async def chat_with_document(
     # 6. Get persona system prompt for LLM - load from database first
     persona_obj = persona_service.get_by_name(persona, db)
     if not persona_obj:
-        raise HTTPException(status_code=400, detail=f"Persona '{persona}' not found")
+        # Create fallback persona if not found
+        persona_obj = {
+            "name": persona,
+            "system_prompt": f"You are {persona} - an ADVERSARIAL CRITIC whose job is to challenge and test arguments. You are the user's intellectual opponent, not their supporter."
+        }
 
     system_prompt = persona_obj.get("system_prompt", "")
     # Add adversarial analysis instructions
@@ -162,8 +166,8 @@ async def chat_with_document(
             if doc.content:
                 # Check if already chunked
                 try:
-                    existing_chunks = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
-                    if not existing_chunks[0] or len(existing_chunks[0]) == 0:  # No chunks found
+                    existing_docs, _, _, _ = similarity_search(query="test", top_k=1, filters={"document_id": doc.id})
+                    if not existing_docs:  # No chunks found
                         chunks = chunk_text(doc.content, max_tokens=150, overlap_sentences=2)
                         ids = [str(uuid.uuid4()) for _ in chunks]
                         metas = [{"document_id": doc.id, "session_id": sid} for _ in chunks]
