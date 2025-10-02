@@ -41,13 +41,20 @@ def get_embedder():
 def add_chunks(chunks: List[str], metadatas: List[dict], ids: List[str]) -> int:
     col = get_collection()
     embed = get_embedder()
-
+    
+    print(f"🔧 ChromaDB: Adding {len(chunks)} chunks to collection '{CHROMA_COLLECTION}' at '{CHROMA_DIR}'")
+    
     col.add(
         documents=chunks,
         metadatas=metadatas,
         ids=ids,
         embeddings=embed(chunks),
     )
+    
+    # Verify chunks were added
+    total_count = col.count()
+    print(f"✅ ChromaDB: Total chunks in collection: {total_count}")
+    
     return len(chunks)
 
 
@@ -58,6 +65,9 @@ def similarity_search(
 ) -> Tuple[List[str], List[dict], List[float], List[str]]:
     col = get_collection()
     embed = get_embedder()
+    
+    total_count = col.count()
+    print(f"🔍 ChromaDB: Searching in collection with {total_count} total chunks, filters: {filters}")
 
     q_emb = embed([query])
 
@@ -72,5 +82,7 @@ def similarity_search(
     metas = res.get("metadatas", [[]])[0]
     dists = res.get("distances", [[]])[0]
     ids = res.get("ids", [[]])[0]  # ✅ This still works (Chroma always returns "ids")
+    
+    print(f"✅ ChromaDB: Found {len(docs)} matching chunks")
 
     return docs, metas, dists, ids
