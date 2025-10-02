@@ -188,23 +188,44 @@ async def chat_simple(
                     filters={"document_id": doc_id_list[0]}  # Single document ID
                 )
             else:
-                # Multiple documents - search without document filter, then filter results
-                docs, metadatas, distances, chunk_ids = similarity_search(
-                    query=question,
-                    top_k=30,  # Get more results to filter
-                    filters={"session_id": sid}  # Use session filter instead
-                )
-                # Filter results to only include requested documents
-                filtered_docs, filtered_metas, filtered_distances, filtered_ids = [], [], [], []
-                for i, meta in enumerate(metadatas):
-                    if meta.get("document_id") in doc_id_list:
-                        filtered_docs.append(docs[i])
-                        filtered_metas.append(meta)
-                        filtered_distances.append(distances[i])
-                        filtered_ids.append(chunk_ids[i])
-                docs, metadatas, distances, chunk_ids = filtered_docs[:15], filtered_metas[:15], filtered_distances[:15], filtered_ids[:15]
+                # Multiple documents - search each document separately and combine
+                # Dynamic chunks per document based on total count
+                chunks_per_doc = max(3, min(10, 30 // len(doc_id_list)))  # 3-10 chunks per doc
+                print(f"📊 Using {chunks_per_doc} chunks per document for {len(doc_id_list)} documents")
+                
+                all_docs, all_metas, all_dists, all_ids = [], [], [], []
+                for doc_id in doc_id_list:
+                    doc_docs, doc_metas, doc_dists, doc_ids_list = similarity_search(
+                        query=question,
+                        top_k=chunks_per_doc,
+                        filters={"document_id": doc_id}
+                    )
+                    all_docs.extend(doc_docs)
+                    all_metas.extend(doc_metas)
+                    all_dists.extend(doc_dists)
+                    all_ids.extend(doc_ids_list)
+                
+                # Sort by distance and take top 15
+                combined = list(zip(all_docs, all_metas, all_dists, all_ids))
+                combined.sort(key=lambda x: x[2])  # Sort by distance
+                docs, metadatas, distances, chunk_ids = zip(*combined[:15]) if combined else ([], [], [], [])
+                docs, metadatas, distances, chunk_ids = list(docs), list(metadatas), list(distances), list(chunk_ids)
             
-            context = "\n\n".join(docs)
+            # Group chunks by document for better context formatting
+            doc_chunks = {}
+            for i, meta in enumerate(metadatas):
+                doc_id = meta.get("document_id")
+                if doc_id not in doc_chunks:
+                    doc_chunks[doc_id] = []
+                doc_chunks[doc_id].append(docs[i])
+            
+            # Format context with document separation
+            context_parts = []
+            for i, doc_id in enumerate(doc_chunks.keys(), 1):
+                doc_content = "\n\n".join(doc_chunks[doc_id])
+                context_parts.append(f"=== DOCUMENT {i} (ID: {doc_id}) ===\n{doc_content}")
+            
+            context = "\n\n" + "\n\n".join(context_parts) + "\n\n"
             print(f"Using RAG vector search from {len(doc_id_list)} documents: {len(context)} characters")
             doc_ids = doc_id_list
         except Exception as e:

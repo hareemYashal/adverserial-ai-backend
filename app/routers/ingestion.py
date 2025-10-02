@@ -198,11 +198,15 @@ async def chat_with_document(
                 )
             else:
                 # Multiple documents - search each document separately and combine
+                # Dynamic chunks per document based on total count
+                chunks_per_doc = max(3, min(10, 30 // len(doc_ids)))  # 3-10 chunks per doc
+                print(f"📊 Using {chunks_per_doc} chunks per document for {len(doc_ids)} documents")
+                
                 all_docs, all_metas, all_dists, all_ids = [], [], [], []
                 for doc_id in doc_ids:
                     doc_docs, doc_metas, doc_dists, doc_ids_list = similarity_search(
                         query=question,
-                        top_k=10,  # Get 10 chunks per document
+                        top_k=chunks_per_doc,
                         filters={"document_id": doc_id}
                     )
                     all_docs.extend(doc_docs)
@@ -216,7 +220,21 @@ async def chat_with_document(
                 docs, metadatas, distances, chunk_ids = zip(*combined[:15]) if combined else ([], [], [], [])
                 docs, metadatas, distances, chunk_ids = list(docs), list(metadatas), list(distances), list(chunk_ids)
             
-            context = "\n\n".join(docs)
+            # Group chunks by document for better context formatting
+            doc_chunks = {}
+            for i, meta in enumerate(metadatas):
+                doc_id = meta.get("document_id")
+                if doc_id not in doc_chunks:
+                    doc_chunks[doc_id] = []
+                doc_chunks[doc_id].append(docs[i])
+            
+            # Format context with document separation
+            context_parts = []
+            for i, doc_id in enumerate(doc_chunks.keys(), 1):
+                doc_content = "\n\n".join(doc_chunks[doc_id])
+                context_parts.append(f"=== DOCUMENT {i} (ID: {doc_id}) ===\n{doc_content}")
+            
+            context = "\n\n" + "\n\n".join(context_parts) + "\n\n"
             print(f"Using RAG vector search from {len(doc_ids)} documents: {len(context)} characters")
         except Exception as e:
             print(f"Vector search failed: {e}")
