@@ -197,21 +197,24 @@ async def chat_with_document(
                     filters={"document_id": doc_ids[0]}  # Single document ID
                 )
             else:
-                # Multiple documents - search without document filter, then filter results
-                docs, metadatas, distances, chunk_ids = similarity_search(
-                    query=question,
-                    top_k=30,  # Get more results to filter
-                    filters={"session_id": sid}  # Use session filter instead
-                )
-                # Filter results to only include requested documents
-                filtered_docs, filtered_metas, filtered_distances, filtered_ids = [], [], [], []
-                for i, meta in enumerate(metadatas):
-                    if meta.get("document_id") in doc_ids:
-                        filtered_docs.append(docs[i])
-                        filtered_metas.append(meta)
-                        filtered_distances.append(distances[i])
-                        filtered_ids.append(chunk_ids[i])
-                docs, metadatas, distances, chunk_ids = filtered_docs[:15], filtered_metas[:15], filtered_distances[:15], filtered_ids[:15]
+                # Multiple documents - search each document separately and combine
+                all_docs, all_metas, all_dists, all_ids = [], [], [], []
+                for doc_id in doc_ids:
+                    doc_docs, doc_metas, doc_dists, doc_ids_list = similarity_search(
+                        query=question,
+                        top_k=10,  # Get 10 chunks per document
+                        filters={"document_id": doc_id}
+                    )
+                    all_docs.extend(doc_docs)
+                    all_metas.extend(doc_metas)
+                    all_dists.extend(doc_dists)
+                    all_ids.extend(doc_ids_list)
+                
+                # Sort by distance and take top 15
+                combined = list(zip(all_docs, all_metas, all_dists, all_ids))
+                combined.sort(key=lambda x: x[2])  # Sort by distance
+                docs, metadatas, distances, chunk_ids = zip(*combined[:15]) if combined else ([], [], [], [])
+                docs, metadatas, distances, chunk_ids = list(docs), list(metadatas), list(distances), list(chunk_ids)
             
             context = "\n\n".join(docs)
             print(f"Using RAG vector search from {len(doc_ids)} documents: {len(context)} characters")
