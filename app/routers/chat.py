@@ -180,7 +180,7 @@ async def chat_simple(
                 # Single document filter - increase chunks for author questions
                 author_keywords = ['author', 'written by', 'by ', 'wrote']
                 is_author_question = any(keyword in question.lower() for keyword in author_keywords)
-                top_k = 25 if is_author_question else 15
+                top_k = 35 if is_author_question else 25
                 
                 docs, metadatas, distances, chunk_ids = similarity_search(
                     query=question,
@@ -190,7 +190,7 @@ async def chat_simple(
             else:
                 # Multiple documents - search each document separately and combine
                 # Dynamic chunks per document based on total count
-                chunks_per_doc = max(3, min(10, 30 // len(doc_id_list)))  # 3-10 chunks per doc
+                chunks_per_doc = max(8, min(20, 80 // len(doc_id_list)))  # 8-20 chunks per doc
                 print(f"📊 Using {chunks_per_doc} chunks per document for {len(doc_id_list)} documents")
                 
                 all_docs, all_metas, all_dists, all_ids = [], [], [], []
@@ -205,10 +205,10 @@ async def chat_simple(
                     all_dists.extend(doc_dists)
                     all_ids.extend(doc_ids_list)
                 
-                # Sort by distance and take top 15
+                # Sort by distance and take top 30 for maximum coverage
                 combined = list(zip(all_docs, all_metas, all_dists, all_ids))
                 combined.sort(key=lambda x: x[2])  # Sort by distance
-                docs, metadatas, distances, chunk_ids = zip(*combined[:15]) if combined else ([], [], [], [])
+                docs, metadatas, distances, chunk_ids = zip(*combined[:30]) if combined else ([], [], [], [])
                 docs, metadatas, distances, chunk_ids = list(docs), list(metadatas), list(distances), list(chunk_ids)
             
             # Group chunks by document for better context formatting
@@ -223,7 +223,7 @@ async def chat_simple(
             context_parts = []
             for i, doc_id in enumerate(doc_chunks.keys(), 1):
                 doc_content = "\n\n".join(doc_chunks[doc_id])
-                context_parts.append(f"=== DOCUMENT {i} (ID: {doc_id}) ===\n{doc_content}")
+                context_parts.append(f"=== DOCUMENT {i} ===\n{doc_content}")
             
             context = "\n\n" + "\n\n".join(context_parts) + "\n\n"
             print(f"Using RAG vector search from {len(doc_id_list)} documents: {len(context)} characters")
